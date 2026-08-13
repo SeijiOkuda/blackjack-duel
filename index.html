@@ -188,6 +188,7 @@
   <ul>
     <li>未知のカードを1枚抱えている場合 → <b>公開札の合計が20以上</b></li>
     <li>未知のカードがない場合（スプリット第2ハンド）→ <b>合計が21</b></li>
+    <li><b>いずれも、エースは1として数える。</b>エースは1にも11にもできるため、「必ずバーストする」かどうかは最小値で判定する。</li>
   </ul>
 
   <h2>サレンダー</h2>
@@ -265,14 +266,20 @@ function totalOf(cards){
   for(const c of cards){ h+=V1(c.r); if(c.r==="A") ace=true; }
   return (ace && h+10<=21) ? h+10 : h;
 }
+// エースを常に1として数えた合計（＝取りうる最小値）
+const hardTotal = cards => cards.reduce((a,c)=>a+V1(c.r),0);
 const handTotal = h => totalOf(h.cards);
 const visCards  = h => h.cards.filter(c=>!c.hidden);
-const visTotal  = h => totalOf(visCards(h));
+const visTotal  = h => hardTotal(visCards(h));
 const hasHidden = h => h.cards.some(c=>c.hidden);
 const isBust    = h => handTotal(h)>21;
 const isNatural = h => h.cards.length===2 && handTotal(h)===21;
+// これ以上引けば「必ず」バーストするかの判定。
+// エースは1に数えられるため、最小値で評価しなければならない。
 function mustAutoStand(h){
-  return hasHidden(h) ? visTotal(h)>=20 : handTotal(h)>=21;
+  return hasHidden(h)
+    ? visTotal(h) >= 20          // 公開札の最小合計20 ＋ 伏せ札の最小1 ＝ 21 → 次を引けば必ず22以上
+    : hardTotal(h.cards) >= 21;  // 未知なし。最小合計21 → 次を引けば必ず22以上
 }
 
 /* ---------- 状態 ---------- */
