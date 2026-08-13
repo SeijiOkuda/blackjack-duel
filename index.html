@@ -5,69 +5,75 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
 <title>ブラックジャック・デュエル</title>
 <style>
-  :root{ --line:#111; --grey:#9a9a9a; --dim:#8b8b8b; --card-w:78px; --card-h:112px; }
+  :root{ --line:#111; --grey:#9a9a9a; --dim:#8b8b8b; --cw:74px; --ch:106px; }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
   html,body{margin:0;padding:0;height:100%;}
   body{background:#fff;color:var(--line);
     font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",system-ui,sans-serif;
     font-size:16px;-webkit-font-smoothing:antialiased;overscroll-behavior:none;}
-  .screen{max-width:520px;margin:0 auto;min-height:100%;display:none;
-    flex-direction:column;padding:env(safe-area-inset-top) 16px calc(12px + env(safe-area-inset-bottom));}
+  .screen{max-width:520px;margin:0 auto;min-height:100%;display:none;flex-direction:column;
+    padding:env(safe-area-inset-top) 16px calc(12px + env(safe-area-inset-bottom));}
   .screen.on{display:flex;}
 
-  /* ---- title / lobby ---- */
-  .centered{flex:1;display:flex;flex-direction:column;justify-content:center;gap:28px;padding:24px 4px;}
+  .centered{flex:1;display:flex;flex-direction:column;justify-content:center;gap:26px;padding:24px 4px;}
   .brand h1{font-size:30px;margin:0 0 6px;letter-spacing:-.02em;line-height:1.25;}
   .brand p{font-size:13px;color:var(--dim);margin:0;letter-spacing:.06em;}
-  .word{font-size:34px;font-weight:700;letter-spacing:.02em;text-align:center;
-    border:3px solid var(--line);border-radius:16px;padding:20px 12px;word-break:break-all;}
+  .word{font-size:32px;font-weight:700;text-align:center;border:3px solid var(--line);
+    border-radius:16px;padding:20px 12px;word-break:break-all;}
   .field{width:100%;font:inherit;font-size:22px;font-weight:600;text-align:center;
     border:3px solid var(--line);border-radius:16px;padding:18px 12px;background:#fff;color:var(--line);}
-  .field::placeholder{color:#c9c9c9;font-weight:400;}
   .note{font-size:13px;color:var(--dim);line-height:1.7;text-align:center;}
 
-  /* ---- game ---- */
-  header{display:flex;align-items:center;justify-content:space-between;padding:14px 2px 10px;font-size:15px;}
-  .stack{display:flex;gap:14px;align-items:baseline;}
-  .stack b{font-size:19px;font-weight:700;}
-  .stack span{font-size:12px;color:var(--dim);}
-  .icon-btn{background:none;border:none;font:inherit;color:var(--line);font-size:14px;padding:6px 2px;cursor:pointer;}
-  .seat{padding:6px 0;min-height:150px;display:flex;flex-direction:column;justify-content:center;}
-  .seat-label{font-size:11px;letter-spacing:.14em;color:var(--dim);text-align:center;margin-bottom:8px;}
+  header{display:flex;align-items:center;justify-content:space-between;padding:12px 2px 8px;font-size:15px;}
+  .stack{display:flex;gap:13px;align-items:baseline;}
+  .stack b{font-size:18px;font-weight:700;}
+  .stack span{font-size:11px;color:var(--dim);}
+  .icon-btn{background:none;border:none;font:inherit;color:var(--line);font-size:13px;padding:6px 3px;cursor:pointer;text-decoration:underline;}
+  .seat{padding:4px 0;min-height:138px;display:flex;flex-direction:column;justify-content:center;}
+  .seat-label{font-size:11px;letter-spacing:.14em;color:var(--dim);text-align:center;margin-bottom:7px;}
   .badge{display:inline-block;border:1px solid var(--line);border-radius:99px;
     padding:1px 8px;font-size:10px;letter-spacing:.08em;margin-left:6px;color:var(--line);}
-  .hands{display:flex;flex-direction:column;align-items:center;gap:10px;}
-  .handrow{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;}
-  .handrow.inactive{opacity:.42;}
-  .cards{display:flex;padding-left:26px;}
-  .total{font-size:26px;font-weight:600;min-width:44px;text-align:left;}
-  .total.small{font-size:18px;}
+  .hands{display:flex;flex-direction:column;align-items:center;gap:9px;}
+  .handrow{display:flex;align-items:center;justify-content:center;gap:11px;width:100%;}
+  .handrow.inactive{opacity:.4;}
+  .cards{display:flex;padding-left:24px;}
+  .total{font-size:24px;font-weight:600;min-width:52px;text-align:left;}
+  .total.small{font-size:17px;}
   .total.unknown{color:var(--dim);}
-  .card{width:var(--card-w);height:var(--card-h);flex:0 0 auto;
-    border:2.5px solid var(--line);border-radius:12px;background:#fff;margin-left:-26px;
-    display:flex;flex-direction:column;justify-content:space-between;padding:5px 6px;line-height:1;}
+  .card{width:var(--cw);height:var(--ch);flex:0 0 auto;border:2.5px solid var(--line);
+    border-radius:11px;background:#fff;margin-left:-24px;display:flex;flex-direction:column;
+    justify-content:space-between;padding:4px 5px;line-height:1;
+    position:relative;}
+  .cards .card:nth-child(1){z-index:1;} .cards .card:nth-child(2){z-index:2;}
+  .cards .card:nth-child(3){z-index:3;} .cards .card:nth-child(4){z-index:4;}
+  .cards .card:nth-child(5){z-index:5;} .cards .card:nth-child(6){z-index:6;}
+  .cards .card:nth-child(n+7){z-index:7;}
+  .card.red{color:#c8102e;} .card.red{border-color:var(--line);}
   .card.down{background:var(--grey);border-color:var(--grey);}
+  .card.mine-hidden{border-style:dashed;}
   .card .pip{display:flex;flex-direction:column;align-items:flex-start;font-weight:600;}
-  .card .pip .r{font-size:22px;} .card .pip .s{font-size:17px;margin-top:1px;}
+  .card .pip .r{font-size:21px;} .card .pip .s{font-size:16px;margin-top:1px;}
   .card .pip.rev{align-self:flex-end;transform:rotate(180deg);}
-  .divider{border:none;border-top:3px solid var(--line);margin:4px 0;}
+  .divider{border:none;border-top:3px solid var(--line);margin:3px 0;}
   .msg{flex:1 1 auto;display:flex;flex-direction:column;justify-content:center;
-    text-align:center;padding:18px 4px;gap:8px;min-height:88px;}
+    text-align:center;padding:14px 4px;gap:7px;min-height:76px;}
   .msg .headline{font-size:19px;font-weight:600;line-height:1.5;}
   .msg .sub{font-size:13px;color:var(--dim);line-height:1.7;white-space:pre-line;}
-  .actions{display:flex;flex-direction:column;gap:9px;padding-top:6px;}
-  .row{display:flex;gap:9px;justify-content:center;flex-wrap:wrap;}
-  button.act{font:inherit;font-size:16px;font-weight:600;padding:13px 20px;border-radius:99px;
-    border:2.5px solid var(--line);background:#fff;color:var(--line);cursor:pointer;min-width:96px;}
+  .actions{display:flex;flex-direction:column;gap:8px;padding-top:4px;}
+  .row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;}
+  button.act{font:inherit;font-size:16px;font-weight:600;padding:12px 18px;border-radius:99px;
+    border:2.5px solid var(--line);background:#fff;color:var(--line);cursor:pointer;min-width:92px;}
   button.act:active{background:#111;color:#fff;}
-  button.act[disabled]{border-color:#c9c9c9;color:#c9c9c9;background:#fff;cursor:default;}
+  button.act[disabled]{border-color:#c9c9c9;color:#c9c9c9;cursor:default;}
   button.act.solid{background:#111;color:#fff;border-color:#111;}
-  button.act.solid:active{opacity:.7;}
-  button.act.sm{font-size:14px;padding:10px 16px;min-width:72px;}
+  button.act.sm{font-size:14px;padding:9px 14px;min-width:68px;}
   button.act.wide{width:100%;}
   button.act:focus-visible{outline:3px solid #111;outline-offset:2px;}
-  #log{font-size:12px;color:var(--dim);line-height:1.7;max-height:96px;overflow-y:auto;
-    padding:8px 2px 0;border-top:1px solid #e6e6e6;margin-top:10px;}
+  .banner{display:none;font-size:12px;font-weight:600;text-align:center;padding:8px;
+    border:2px solid var(--line);border-radius:10px;margin:0 0 6px;}
+  .banner.on{display:block;}
+  #log{font-size:12px;color:var(--dim);line-height:1.65;max-height:84px;overflow-y:auto;
+    padding:7px 2px 0;border-top:1px solid #e6e6e6;margin-top:8px;}
 
   .sheet{position:fixed;inset:0;background:#fff;z-index:20;overflow-y:auto;display:none;
     padding:calc(20px + env(safe-area-inset-top)) 20px calc(28px + env(safe-area-inset-bottom));}
@@ -79,46 +85,42 @@
   .sheet table{width:100%;border-collapse:collapse;font-size:13px;margin:8px 0;}
   .sheet th,.sheet td{border:1px solid #ddd;padding:6px 8px;text-align:left;}
   .sheet th{background:#f5f5f5;font-weight:600;}
-  @media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important;}}
+  .cgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(62px,1fr));gap:7px;margin:10px 0;}
+  .cell{border:2px solid var(--line);border-radius:9px;padding:7px 4px;text-align:center;}
+  .cell .rk{font-size:17px;font-weight:700;} .cell .ct{font-size:12px;color:var(--dim);margin-top:2px;}
+  .cell.low{border-color:#c9c9c9;} .cell.low .rk{color:#c9c9c9;}
+  @media (prefers-reduced-motion: reduce){*{transition:none!important;}}
 </style>
 </head>
 <body>
 
-<!-- ================= タイトル ================= -->
-<div class="screen on" id="scTitle">
-  <div class="centered">
-    <div class="brand">
-      <h1>ブラックジャック<br>デュエル</h1>
-      <p>2人対戦 / RULES v3.1</p>
-    </div>
-    <div class="actions">
-      <div class="row"><button class="act solid wide" id="btnCpu">CPU と対戦</button></div>
-      <div class="row"><button class="act wide" id="btnHost">合言葉をつくる</button></div>
-      <div class="row"><button class="act wide" id="btnJoin">合言葉で参加</button></div>
-      <div class="row"><button class="act sm" id="btnRulesTitle">ルールを読む</button></div>
-    </div>
-    <p class="note" id="netNote">&nbsp;</p>
+<div class="screen on" id="scTitle"><div class="centered">
+  <div class="brand"><h1>ブラックジャック<br>デュエル</h1><p>2人対戦 / RULES v5.1</p></div>
+  <div class="actions">
+    <div class="row"><button class="act solid wide" id="btnCpu">CPU と対戦</button></div>
+    <div class="row"><button class="act wide" id="btnHost">合言葉をつくる</button></div>
+    <div class="row"><button class="act wide" id="btnJoin">合言葉で参加</button></div>
+    <div class="row"><button class="act sm" id="btnRulesTitle">ルールを読む</button></div>
   </div>
-</div>
+  <p class="note" id="netNote">&nbsp;</p>
+</div></div>
 
-<!-- ================= ロビー ================= -->
-<div class="screen" id="scLobby">
-  <div class="centered">
-    <div id="lobbyBody"></div>
-    <div class="actions" id="lobbyActions"></div>
-    <p class="note" id="lobbyNote">&nbsp;</p>
-  </div>
-</div>
+<div class="screen" id="scLobby"><div class="centered">
+  <div id="lobbyBody"></div>
+  <div class="actions" id="lobbyActions"></div>
+  <p class="note" id="lobbyNote">&nbsp;</p>
+</div></div>
 
-<!-- ================= ゲーム ================= -->
 <div class="screen" id="scGame">
+  <div class="banner" id="netBanner"></div>
   <header>
     <div class="stack">
       <div><b id="myChips">0</b><span> あなた</span></div>
       <div><b id="oppChips">0</b><span id="oppChipsLabel"> 相手</span></div>
+      <div><b id="pot">0</b><span> ポット</span></div>
     </div>
     <div class="stack">
-      <div><b id="pot">0</b><span> ポット</span></div>
+      <button class="icon-btn" id="countBtn">残り <b id="deckLeft">104</b></button>
       <button class="icon-btn" id="rulesBtn">ルール</button>
     </div>
   </header>
@@ -129,220 +131,265 @@
   <hr class="divider">
   <section class="seat">
     <div class="hands" id="botHands"></div>
-    <div class="seat-label" id="botLabel" style="margin:8px 0 0">あなた</div>
+    <div class="seat-label" id="botLabel" style="margin:7px 0 0">あなた</div>
   </section>
-  <div class="msg">
-    <div class="headline" id="headline">&nbsp;</div>
-    <div class="sub" id="sub">&nbsp;</div>
-  </div>
+  <div class="msg"><div class="headline" id="headline">&nbsp;</div><div class="sub" id="sub">&nbsp;</div></div>
   <div class="actions" id="actions"></div>
   <div id="log"></div>
 </div>
 
-<!-- ================= ルール ================= -->
+<div class="sheet" id="countSheet"><div class="sheet-inner">
+  <h1>残りカード</h1>
+  <p class="note" style="text-align:left" id="countNote"></p>
+  <div class="cgrid" id="cgrid"></div>
+  <h2>ハイロー・カウント</h2>
+  <p id="hilo"></p>
+  <div style="height:20px"></div>
+  <button class="act solid wide" id="closeCount">閉じる</button>
+</div></div>
+
 <div class="sheet" id="sheet"><div class="sheet-inner">
   <h1>ブラックジャック・デュエル</h1>
-  <p style="color:#8b8b8b">ルールブック v3.1</p>
+  <p style="color:#8b8b8b">ルールブック v5.1</p>
+
+  <h2>芯</h2>
+  <p>未知の情報は互いの伏せ札1枚だけ。<b>バーストは公開されない。</b>相手が何枚めくって止まったかを見て、伏せ札1枚の分布からバースト確率を計算する。相手が既にバーストしていれば、自分がバーストしても両者バーストでディーラーが勝つ。だから押せる。この見積もりが勝敗を分ける。</p>
+
   <h2>基本</h2>
   <ul>
-    <li>2人対戦。1ハンドごとにディーラーが交代し、デッキをシャッフルし直す。</li>
-    <li>アンティはディーラー 1、ノンディーラー 2。ブラインド扱い（生きたベット）。</li>
+    <li>2人対戦。1ハンドごとにディーラーが交代する。</li>
+    <li>アンティは<b>ディーラー 9 / ノンディーラー 10</b>。</li>
     <li>行動順は常にノンディーラーが先行。</li>
+    <li><b>2デッキを継続使用</b>。残り30枚を切ったらシャッフル。</li>
   </ul>
+
   <h2>勝敗の基本形</h2>
   <table><tr><th>状況</th><th>裁定</th></tr>
     <tr><td>引き分け</td><td>ノンディーラーの勝ち</td></tr>
     <tr><td>両者バースト</td><td>ディーラーの勝ち</td></tr></table>
+
   <h2>進行</h2>
-  <p>配札 → ベットラウンド① → 伏せ札の確認 → ベットラウンド② → ドローフェーズ → ベットラウンド③ → ショーダウン</p>
+  <p>アンティ → 配札 → ベットラウンド（1回） → サレンダー判断 → ドローフェーズ → ショーダウン</p>
   <ul>
-    <li>配札時、1枚は表札（公開）、1枚は伏せ札（<b>この時点では本人も見られない</b>）。</li>
-    <li>ドローで引いたカードの数値は非公開。<b>枚数のみ公開</b>。</li>
-    <li>最終ベットラウンド後のドローは不可。</li>
+    <li>配札は表1枚・伏せ1枚。<b>伏せ札は本人が最初から確認できる。</b></li>
+    <li>ドローで引いたカードは<b>数値まで全公開</b>。</li>
+    <li><b>ドロー開始後は賭け金を動かせない</b>（DDのみ例外）。</li>
   </ul>
-  <h2>ベットラウンド①（特別ルール）</h2>
+
+  <h2>バーストは公開しない</h2>
   <ul>
-    <li>レイズできるのは<b>ノンディーラーのみ</b>。</li>
-    <li>賭け金の上限は <b>4</b>。</li>
-    <li>ディーラーは<b>フォールドできない</b>。必ずコールする。</li>
+    <li>22以上になっても公開せず、ハンドはそのまま進行する。</li>
+    <li>外形上は「スタンドした」ようにしか見えない。</li>
+    <li><b>バーストした後もヒットできる</b>（強制スタンドにはならない）。</li>
   </ul>
+
+  <h2>自動スタンド</h2>
+  <p>これ以上引けば必ずバーストする状態に達した時点で、自動的にスタンドとなる。</p>
+  <ul>
+    <li>未知のカードを1枚抱えている場合 → <b>公開札の合計が20以上</b></li>
+    <li>未知のカードがない場合（スプリット第2ハンド）→ <b>合計が21</b></li>
+  </ul>
+
+  <h2>サレンダー</h2>
+  <p>ベットラウンド後、<b>1枚も引く前に限り</b>宣言できる。拠出額の半分を放棄して降りる。</p>
+  <p class="note" style="text-align:left">コール額が自分の拠出額を上回るならフォールド、下回るならサレンダーが有利。</p>
+
   <h2>勝敗判定</h2>
   <ul>
-    <li>合計22以上は即敗北。</li>
+    <li>合計22以上は敗北。</li>
     <li>ナチュラル（2枚で21）は3枚以上の21に勝つ。3:2配当は使用しない。</li>
-    <li>スプリット後に成立した21はナチュラル扱いとしない。</li>
-    <li>バーストしていてもショーダウンまでベットを継続できる。</li>
+    <li><b>スプリット後の2枚21もナチュラル扱い。</b></li>
   </ul>
+
   <h2>ダブルダウン</h2>
   <ul>
-    <li>その時点の自分の総拠出額と同額を追加投入し、1枚だけ引いて強制スタンド。</li>
-    <li>相手は「応じる」か「フォールド」の二択。応じただけではDD扱いにならない。</li>
-    <li>応じた側は改めて自分のDDを宣言できる。</li>
+    <li><b>初期2枚の状態でのみ宣言できる</b>（1枚でも引いた後は不可）。</li>
+    <li>総拠出額と同額を追加投入し、1枚引いて強制スタンド。</li>
+    <li>相手は「応じる」か「フォールド」の二択。応じてもDD扱いにはならない。</li>
   </ul>
   <table><tr><th></th><th>引き分け</th><th>両者バースト</th></tr>
     <tr><td>誰もDDしない</td><td>ノンディーラー</td><td>ディーラー</td></tr>
     <tr><td>ノンディーラーのみDD</td><td>ノンディーラー</td><td><b>ノンディーラー</b></td></tr>
     <tr><td>ディーラーのみDD</td><td><b>ディーラー</b></td><td>ディーラー</td></tr>
     <tr><td>両者DD</td><td>ノンディーラー</td><td>ディーラー</td></tr></table>
+
   <h2>スプリット</h2>
   <ul>
-    <li>同数字2枚のとき、ドローフェーズの冒頭で宣言できる。</li>
-    <li>伏せ札を公開し、独立した2つの勝負とする。ポットは等分。</li>
-    <li>各手札にヒットは可能、ダブルダウンは不可。</li>
+    <li>同数字2枚のとき、ドローフェーズ冒頭で宣言できる。</li>
+    <li>伏せ札を公開し、2つに分割。<b>各手札に1枚ずつ自動配札</b>する。</li>
+    <li><b>第1ハンドは伏せて配る</b>（本人のみ確認可）。<b>第2ハンドは公開して配る。</b></li>
+    <li>掛け金・ポットは等分。ヒット可、ダブルダウン不可。</li>
     <li>片方の勝負だけを降りることはできない。</li>
   </ul>
-  <h2>オールイン</h2>
-  <p>相手の投入額のうち、自分の投入額を超える分は相手に返却される。成立後はベットを行わず、ドロー処理のみ進めてショーダウンする。</p>
-  <div style="height:24px"></div>
+
+  <h2>実測された最善戦略</h2>
+  <ul>
+    <li><b>スタンド閾値は 16</b>（本家の17より1低い）</li>
+    <li><b>DDは 10・11 のみ</b>。12以上でのDDは大損</li>
+    <li><b>サレンダーは 16 vs 10・A のみ</b></li>
+    <li><b>スプリットは 8・8 中心</b>。全ペア分割は損</li>
+  </ul>
+
+  <div style="height:20px"></div>
   <button class="act solid wide" id="closeSheet">閉じる</button>
 </div></div>
 
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script>
 "use strict";
-
-/* ============================================================
-   0. 画面切り替え・共通
-   ============================================================ */
 const $ = id => document.getElementById(id);
 function showScreen(id){ ["scTitle","scLobby","scGame"].forEach(s=>$(s).classList.toggle("on", s===id)); }
 $("rulesBtn").onclick = $("btnRulesTitle").onclick = ()=>$("sheet").classList.add("open");
 $("closeSheet").onclick = ()=>$("sheet").classList.remove("open");
+$("closeCount").onclick = ()=>$("countSheet").classList.remove("open");
 
-let MODE = null;          // "cpu" | "host" | "guest"
-let conn = null, peer = null;
-const isCPU = seat => MODE==="cpu" && seat==="c";
+let MODE=null, conn=null, peer=null, LASTPL=null;
+const isCPU = s => MODE==="cpu" && s==="c";
 const other = p => p==="p" ? "c" : "p";
 
-/* ============================================================
-   1. カード
-   ============================================================ */
+/* ---------- カード ---------- */
 const RANKS=["A","2","3","4","5","6","7","8","9","10","J","Q","K"];
 const SUITS=["\u2660","\u2665","\u2666","\u2663"];
-function buildDeck(){ const d=[];
-  for(const s of SUITS) for(const r of RANKS) d.push({r,s});
-  for(let i=d.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[d[i],d[j]]=[d[j],d[i]];}
-  return d; }
-function cardVal(c){ if(c.r==="A")return 11; if(["10","J","Q","K"].includes(c.r))return 10; return parseInt(c.r,10); }
-function total(cards){ let t=0,a=0;
-  for(const c of cards){ t+=cardVal(c); if(c.r==="A")a++; }
-  while(t>21&&a>0){t-=10;a--;} return t; }
-const isBust = h => total(h.cards)>21;
-const isNatural = h => !h.fromSplit && h.cards.length===2 && total(h.cards)===21;
+const NDECKS=2, RESHUFFLE=30;
+const V1 = r => r==="A" ? 1 : (["10","J","Q","K"].includes(r) ? 10 : parseInt(r,10));
+const HILO = r => ["2","3","4","5","6"].includes(r) ? 1 : (["7","8","9"].includes(r) ? 0 : -1);
 
-/* ============================================================
-   2. 状態
-   ============================================================ */
-const START_CHIPS=200, ANTE_D=1, ANTE_ND=2, R1_CAP=4;
+function buildShoe(){
+  const d=[];
+  for(let n=0;n<NDECKS;n++) for(const s of SUITS) for(const r of RANKS) d.push({r,s});
+  for(let i=d.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[d[i],d[j]]=[d[j],d[i]];}
+  return d;
+}
+function totalOf(cards){
+  let h=0,ace=false;
+  for(const c of cards){ h+=V1(c.r); if(c.r==="A") ace=true; }
+  return (ace && h+10<=21) ? h+10 : h;
+}
+const handTotal = h => totalOf(h.cards);
+const visCards  = h => h.cards.filter(c=>!c.hidden);
+const visTotal  = h => totalOf(visCards(h));
+const hasHidden = h => h.cards.some(c=>c.hidden);
+const isBust    = h => handTotal(h)>21;
+const isNatural = h => h.cards.length===2 && handTotal(h)===21;
+function mustAutoStand(h){
+  return hasHidden(h) ? visTotal(h)>=20 : handTotal(h)>=21;
+}
+
+/* ---------- 状態 ---------- */
+const START=200, ANTE_D=9, ANTE_ND=10;
 let S=null;
 const nonDealer = ()=>other(S.dealer);
 const oppLabel = ()=> MODE==="cpu" ? "CPU" : "相手";
-
-function personalize(str, viewer){
+const tok = s => s==="p" ? "{P}" : "{C}";
+function person(str, viewer){
   if(!str) return "";
   const P = viewer==="p" ? "あなた" : oppLabel();
   const C = viewer==="c" ? "あなた" : oppLabel();
   return String(str).split("{P}").join(P).split("{C}").join(C);
 }
-const pick = (v, viewer) => (v && typeof v==="object" && !Array.isArray(v)) ? (v[viewer]||"") : (v||"");
+const pick = (v,viewer)=> (v && typeof v==="object" && !Array.isArray(v)) ? (v[viewer]||"") : (v||"");
 
 function newGame(){
-  S={ chips:{p:START_CHIPS,c:START_CHIPS}, dealer:"c", handNo:0 };
+  S={ chips:{p:START,c:START}, dealer:"c", handNo:0, shoe:buildShoe(), discard:[], log:[] };
   newHand();
 }
 function newHand(){
   if(S.chips.p<=0 || S.chips.c<=0) return gameOver();
+  if(S.shoe.length < RESHUFFLE){ S.shoe=buildShoe(); S.discard=[]; logLine("— シャッフル —"); }
   S.handNo++;
-  S.deck=buildDeck(); S.pot=0;
-  S.contrib={p:0,c:0}; S.dd={p:false,c:false}; S.split={p:false,c:false};
-  S.holeSeen=false; S.revealAll=false; S.bettingClosed=false; S.log=[];
-  S.hands={
-    p:[{cards:[S.deck.pop(),S.deck.pop()], stood:false, fromSplit:false}],
-    c:[{cards:[S.deck.pop(),S.deck.pop()], stood:false, fromSplit:false}]
-  };
+  S.pot=0; S.contrib={p:0,c:0}; S.dd={p:false,c:false}; S.split={p:false,c:false};
+  S.revealAll=false; S.bettingClosed=false;
+  S.hands={ p:[mkHand()], c:[mkHand()] };
   post(S.dealer,ANTE_D); post(nonDealer(),ANTE_ND);
-  logLine(`— ハンド ${S.handNo}：ディーラーは${S.dealer==="p"?"{P}":"{C}"} —`);
-  startBet1();
+  logLine(`— ハンド ${S.handNo}：ディーラーは${tok(S.dealer)}（残り${S.shoe.length}枚）—`);
+  startBet();
 }
-function post(who,amt){ const a=Math.min(amt,S.chips[who]); S.chips[who]-=a; S.contrib[who]+=a; S.pot+=a; }
-function logLine(t){ S.log.push(t); }
-const tok = seat => seat==="p" ? "{P}" : "{C}";
+function mkHand(){
+  const hole={...S.shoe.pop(), hidden:true};
+  const up  ={...S.shoe.pop(), hidden:false};
+  return {cards:[hole,up], stood:false};
+}
+function post(w,a){ const x=Math.min(a,S.chips[w]); S.chips[w]-=x; S.contrib[w]+=x; S.pot+=x; }
+function logLine(t){ S.log.push(t); if(S.log.length>60) S.log.shift(); }
+function draw(hidden){ return {...S.shoe.pop(), hidden:!!hidden}; }
 
-/* ============================================================
-   3. 描画（ホストが両視点のペイロードを作る）
-   ============================================================ */
+/* ---------- 描画ペイロード ---------- */
 function seatData(who, viewer){
   const hs=S.hands[who], isMe=(who===viewer);
   return hs.map((h,idx)=>{
-    const cards=h.cards.map((c,i)=>{
-      let down;
-      if(S.revealAll) down=false;
-      else if(isMe) down = (i===0 && !S.holeSeen);
-      else if(h.fromSplit) down = (i>0);
-      else down = !(i===1 && h.cards.length>=2);
-      return down ? {down:true} : {r:c.r, s:c.s};
+    const cards=h.cards.map(c=>{
+      if(S.revealAll) return {r:c.r,s:c.s};
+      if(isMe) return {r:c.r,s:c.s,dashed:c.hidden};
+      return c.hidden ? {down:true} : {r:c.r,s:c.s};
     });
-    let t="", cls="";
-    if(S.revealAll || (isMe && S.holeSeen)){
-      const v=total(h.cards); t = v>21 ? "バースト" : String(v);
-    } else { t="?"; cls="unknown"; }
-    const dim = hs.length>1 && S.phase==="draw" && S.drawTurn===who && S.handIdx!==idx;
+    let t,cls="";
+    if(S.revealAll || isMe){ const v=handTotal(h); t = v>21 ? "バースト" : String(v); }
+    else if(hasHidden(h)){ t = visTotal(h)+"+?"; cls="unknown"; }
+    else { const v=handTotal(h); t = v>21 ? "バースト" : String(v); }
+    const dim = hs.length>1 && S.phase==="draw" && S.turn===who && S.handIdx!==idx;
     return {cards, total:t, cls:cls+(hs.length>1?" small":""), dim};
   });
 }
-
+function countsFor(viewer){
+  const rem={}; RANKS.forEach(r=>rem[r]=4*NDECKS);
+  const sub=c=>{ if(rem[c.r]!==undefined) rem[c.r]--; };
+  S.discard.forEach(sub);
+  for(const seat of ["p","c"]) for(const h of S.hands[seat]) for(const c of h.cards){
+    if(S.revealAll || !c.hidden || seat===viewer) sub(c);
+  }
+  let hl=0; S.discard.forEach(c=>hl+=HILO(c.r));
+  for(const seat of ["p","c"]) for(const h of S.hands[seat]) for(const c of h.cards){
+    if(S.revealAll || !c.hidden || seat===viewer) hl+=HILO(c.r);
+  }
+  const unknown=Object.values(rem).reduce((a,b)=>a+b,0);
+  return {rem, unknown, hilo:hl, tc:(hl/Math.max(unknown/52,0.4)).toFixed(1)};
+}
 function buildPayload(viewer){
   const v=S.view||{}, opp=other(viewer);
-  const mine = v.actor===viewer;
-  const waiting = v.actor && v.actor!==viewer;
-  let sub = personalize(pick(v.sub,viewer), viewer);
-  if(waiting) sub = (sub?sub+"\n":"") + "（相手の操作を待っています）";
+  const mine=v.actor===viewer, waiting=v.actor && v.actor!==viewer;
+  let sub=person(pick(v.sub,viewer),viewer);
+  if(waiting) sub=(sub?sub+"\n":"")+"（相手の操作を待っています）";
   return {
-    topLabel: oppLabel(), botLabel: "あなた",
-    topDealer: S.dealer===opp, botDealer: S.dealer===viewer,
-    top: seatData(opp,viewer), bot: seatData(viewer,viewer),
+    topLabel:oppLabel(), botLabel:"あなた",
+    topDealer:S.dealer===opp, botDealer:S.dealer===viewer,
+    top:seatData(opp,viewer), bot:seatData(viewer,viewer),
     myChips:S.chips[viewer], oppChips:S.chips[opp], pot:S.pot,
-    headline: personalize(pick(v.headline,viewer), viewer),
-    sub,
+    counts:countsFor(viewer),
+    headline:person(pick(v.headline,viewer),viewer), sub,
     rows: mine ? (v.rows||[]).map(r=>r.map(b=>({id:b.id,t:b.t,disabled:!!b.disabled,solid:!!b.solid,sm:!!b.sm}))) : [],
-    log: S.log.slice(-14).map(l=>personalize(l,viewer))
+    log:S.log.slice(-12).map(l=>person(l,viewer))
   };
 }
-
-/* show(): ホスト側から画面を更新し、必要ならゲストへ送る */
 function show(view){
-  S.view=view; S.pending={};
-  let n=0;
+  // CPU戦では、CPU席に操作ボタンを割り当てると誰も押せなくなるため人間側へ寄せる
+  if(MODE==="cpu" && view.actor==="c" && (view.rows||[]).length) view.actor="p";
+  S.view=view; S.pending={}; let n=0;
   (view.rows||[]).forEach(r=>r.forEach(b=>{ b.id="a"+(n++); if(b.f) S.pending[b.id]=b.f; }));
-  paint(buildPayload("p"), id=>runAction(id));
-  if(MODE==="host" && conn && conn.open) send({type:"view", payload:buildPayload("c")});
+  paint(buildPayload("p"), runAction);
+  if(MODE==="host" && conn && conn.open) sendMsg({type:"view",payload:buildPayload("c")});
 }
-function runAction(id){
-  const f=S.pending && S.pending[id];
-  if(f){ S.pending={}; f(); }
-}
-function send(o){ try{ conn && conn.open && conn.send(o); }catch(e){} }
+function runAction(id){ const f=S.pending&&S.pending[id]; if(f){ S.pending={}; f(); } }
+function sendMsg(o){ try{ conn&&conn.open&&conn.send(o); }catch(e){} }
 
-/* paint(): ホスト・ゲスト共通の描画 */
+/* ---------- 共通描画 ---------- */
 function cardHTML(c){
   if(c.down) return `<div class="card down"></div>`;
-  return `<div class="card">
+  const red = (c.s==="\u2665"||c.s==="\u2666") ? " red" : "";
+  return `<div class="card${red}${c.dashed?" mine-hidden":""}">
     <div class="pip"><span class="r">${c.r}</span><span class="s">${c.s}</span></div>
     <div class="pip rev"><span class="r">${c.r}</span><span class="s">${c.s}</span></div></div>`;
 }
-function handsHTML(hands){
-  return hands.map(h=>`<div class="handrow ${h.dim?"inactive":""}">
-    <div class="cards">${h.cards.map(cardHTML).join("")}</div>
-    <div class="total ${h.cls||""}">${h.total}</div></div>`).join("");
-}
-function paint(pl, onBtn){
-  showScreen("scGame");
-  $("myChips").textContent=pl.myChips;
-  $("oppChips").textContent=pl.oppChips;
-  $("oppChipsLabel").textContent=" "+pl.topLabel;
-  $("pot").textContent=pl.pot;
-  $("topLabel").innerHTML = pl.topLabel + (pl.topDealer?`<span class="badge">D</span>`:"");
-  $("botLabel").innerHTML = pl.botLabel + (pl.botDealer?`<span class="badge">D</span>`:"");
+const handsHTML = hs => hs.map(h=>`<div class="handrow ${h.dim?"inactive":""}">
+  <div class="cards">${h.cards.map(cardHTML).join("")}</div>
+  <div class="total ${h.cls||""}">${h.total}</div></div>`).join("");
+
+function paint(pl,onBtn){
+  LASTPL=pl; showScreen("scGame");
+  $("myChips").textContent=pl.myChips; $("oppChips").textContent=pl.oppChips;
+  $("oppChipsLabel").textContent=" "+pl.topLabel; $("pot").textContent=pl.pot;
+  $("deckLeft").textContent=pl.counts.unknown;
+  $("topLabel").innerHTML=pl.topLabel+(pl.topDealer?`<span class="badge">D</span>`:"");
+  $("botLabel").innerHTML=pl.botLabel+(pl.botDealer?`<span class="badge">D</span>`:"");
   $("topHands").innerHTML=handsHTML(pl.top);
   $("botHands").innerHTML=handsHTML(pl.bot);
   $("headline").textContent=pl.headline||"\u00a0";
@@ -359,99 +406,71 @@ function paint(pl, onBtn){
     });
     act.appendChild(d);
   });
-  const lg=$("log");
-  lg.innerHTML=(pl.log||[]).map(l=>`<div>${l}</div>`).join("");
-  lg.scrollTop=lg.scrollHeight;
+  const lg=$("log"); lg.innerHTML=(pl.log||[]).map(l=>`<div>${l}</div>`).join(""); lg.scrollTop=lg.scrollHeight;
 }
+$("countBtn").onclick=()=>{
+  if(!LASTPL) return;
+  const c=LASTPL.counts;
+  $("countNote").textContent=`まだ姿を見せていないカード ${c.unknown} 枚。相手の伏せ札1枚もここに含まれます。`;
+  $("cgrid").innerHTML=RANKS.map(r=>`<div class="cell${c.rem[r]<=1?" low":""}">
+    <div class="rk">${r}</div><div class="ct">${c.rem[r]} / ${4*NDECKS}</div></div>`).join("");
+  $("hilo").textContent=`ランニング ${c.hilo>0?"+":""}${c.hilo}　真カウント ${c.tc}　（+2以上は高札が多く残っている状態）`;
+  $("countSheet").classList.add("open");
+};
 
-/* ============================================================
-   4. ベットラウンド①
-   ============================================================ */
-function startBet1(){
-  S.phase="bet1";
-  const nd=nonDealer();
-  if(isCPU(nd)){
-    show({headline:"ベットラウンド①", sub:"{C} が賭け金の水準を決めています…"});
-    setTimeout(()=>bet1Set(cpuBet1Level()), 550);
-    return;
-  }
-  show({
-    actor:nd, headline:"ベットラウンド①",
-    sub:{ [nd]:"表札だけで賭け金の水準を決めます。ここで決めた額まで、ディーラーは必ずコールします。",
-          [S.dealer]:"ノンディーラーが賭け金の水準を決めています。ディーラーはフォールドできません。" },
-    rows:[[
-      {t:"そのまま 2", f:()=>bet1Set(2)},
-      {t:"3 にレイズ", f:()=>bet1Set(3)},
-      {t:"4 にレイズ", f:()=>bet1Set(4)}
-    ]]
-  });
-}
-function cpuBet1Level(){
-  const up=cardVal(S.hands.c[0].cards[1]), r=Math.random();
-  if(up>=10) return r<0.75?4:3;
-  if(up>=7)  return r<0.5?3:(r<0.75?4:2);
-  return r<0.6?2:3;
-}
-function bet1Set(level){
-  const lv=Math.min(level,R1_CAP);
-  for(const w of ["p","c"]){ const need=Math.min(lv-S.contrib[w], S.chips[w]); if(need>0) post(w,need); }
-  logLine(`①：${tok(nonDealer())} が水準を ${lv} に設定。${tok(S.dealer)} はコール。`);
-  S.holeSeen=true;
-  show({ headline:"伏せ札を確認",
-    sub:"自分の伏せ札が公開されました。相手の伏せ札は伏せられたままです。",
-    actor:"p", rows:[[{t:"次へ", f:startBet2, solid:true}]] });
-}
-
-/* ============================================================
-   5. ベットラウンド②③
-   ============================================================ */
-function startBet2(){ startBetRound(2, startDraw); }
-function startBetRound(round, done){
-  if(S.bettingClosed || S.chips.p===0 || S.chips.c===0) return done();
-  S.phase="bet"+round;
-  S.bet={round, put:{p:0,c:0}, acted:{p:false,c:false}, actor:nonDealer(), done};
+/* ---------- ベットラウンド（1回） ---------- */
+function startBet(){
+  S.phase="bet";
+  S.bet={put:{p:0,c:0}, acted:{p:false,c:false}, actor:nonDealer()};
   stepBet();
 }
-const betHigh = ()=>Math.max(S.bet.put.p,S.bet.put.c);
-const toCall = w => Math.min(betHigh()-S.bet.put[w], S.chips[w]);
-
+const betHigh=()=>Math.max(S.bet.put.p,S.bet.put.c);
+const toCall=w=>Math.min(betHigh()-S.bet.put[w], S.chips[w]);
 function stepBet(){
   const b=S.bet;
-  if(b.acted.p && b.acted.c && b.put.p===b.put.c) return finishBet();
-  if(S.chips[b.actor]===0){
-    b.acted[b.actor]=true; b.actor=other(b.actor);
-    if(S.chips[b.actor]===0) return finishBet();
+  if(b.acted.p&&b.acted.c&&b.put.p===b.put.c) return finishBet();
+  const a=b.actor;
+  if(S.chips[a]===0){
+    // 持ち金が尽きた側はこれ以上コールできない。相手が行動済みならラウンド終了
+    b.acted[a]=true;
+    if(b.acted[other(a)]) return finishBet();
+    b.actor=other(a);
     return stepBet();
   }
-  if(isCPU(b.actor)) setTimeout(cpuBet,620); else renderBetUI(b.actor,false);
+  if(isCPU(a)) setTimeout(cpuBet,600); else betUI(a,false);
 }
 function finishBet(){
+  // 超過分の返却（相手が払いきれなかった分は戻る）
+  const hi=Math.max(S.bet.put.p,S.bet.put.c), lo=Math.min(S.bet.put.p,S.bet.put.c);
+  if(hi>lo){
+    const over = S.bet.put.p>S.bet.put.c ? "p" : "c", back=hi-lo;
+    S.chips[over]+=back; S.contrib[over]-=back; S.pot-=back;
+    logLine(`超過分 ${back} を ${tok(over)} に返却。`);
+  }
   if(S.chips.p===0||S.chips.c===0){ S.bettingClosed=true; logLine("オールイン成立。以降のベットは行いません。"); }
-  const d=S.bet.done; S.bet=null; d();
+  S.bet=null; startSurrender(nonDealer());
 }
-function betPut(w,amt){ const a=Math.min(amt,S.chips[w]); S.chips[w]-=a; S.contrib[w]+=a; S.pot+=a; S.bet.put[w]+=a; }
-
-function renderBetUI(seat, showRaise){
+function betPut(w,a){ const x=Math.min(a,S.chips[w]); S.chips[w]-=x; S.contrib[w]+=x; S.pot+=x; S.bet.put[w]+=x; }
+function betUI(seat,raise){
   const c=toCall(seat), rows=[];
-  if(showRaise){
-    const row=[10,25].filter(v=>v<S.chips[seat]-c).map(v=>({t:`+${v}`, sm:true, f:()=>betAction(seat,"raise",v)}));
-    row.push({t:"オールイン", sm:true, f:()=>betAction(seat,"allin")});
-    row.push({t:"戻る", sm:true, f:()=>renderBetUI(seat,false)});
+  if(raise){
+    const row=[10,25,50].filter(v=>v<S.chips[seat]-c).map(v=>({t:`+${v}`,sm:true,f:()=>betAct(seat,"raise",v)}));
+    row.push({t:"オールイン",sm:true,f:()=>betAct(seat,"allin")});
+    row.push({t:"戻る",sm:true,f:()=>betUI(seat,false)});
     rows.push(row);
   } else {
     const r1=[];
-    if(c===0) r1.push({t:"チェック", f:()=>betAction(seat,"check")});
-    else r1.push({t:`コール ${c}`, f:()=>betAction(seat,"call")});
-    r1.push({t:"レイズ", disabled:S.chips[seat]<=c, f:()=>renderBetUI(seat,true)});
-    if(c>0) r1.push({t:"フォールド", f:()=>betAction(seat,"fold")});
+    if(c===0) r1.push({t:"チェック",f:()=>betAct(seat,"check")});
+    else r1.push({t:`コール ${c}`,f:()=>betAct(seat,"call")});
+    r1.push({t:"レイズ",disabled:S.chips[seat]<=c,f:()=>betUI(seat,true)});
+    if(c>0) r1.push({t:"フォールド",f:()=>betAct(seat,"fold")});
     rows.push(r1);
   }
-  show({ actor:seat, headline:`ベットラウンド${S.bet.round===2?"②":"③"}`,
-    sub:{ [seat]: c===0 ? "コールは不要です。" : `コールには ${c} が必要です。`,
-          [other(seat)]: "" },
-    rows });
+  show({actor:seat, headline:"ベットラウンド",
+    sub:{[seat]: (c===0?"コールは不要です。":`コールには ${c} が必要です。`)+"\nドローが始まると賭け金は動かせません。", [other(seat)]:""},
+    rows});
 }
-function betAction(seat,kind,amt){
+function betAct(seat,kind,amt){
   const b=S.bet;
   if(kind==="fold") return doFold(seat);
   if(kind==="check"){ b.acted[seat]=true; logLine(`${tok(seat)} はチェック。`); }
@@ -464,289 +483,342 @@ function cpuBet(){
   const b=S.bet, c=toCall("c"), st=cpuStrength(), r=Math.random();
   if(c>0){
     const odds=c/(S.pot+c);
-    if(st<0.30 && odds>0.28 && r<0.75) return doFold("c");
-    if(st>0.72 && r<0.42 && S.chips.c>c+6 && !S.bettingClosed){
-      const add=Math.min(S.chips.c-c, Math.max(6, Math.round(S.pot*0.6)));
+    if(st<0.30 && odds>0.30 && r<0.7) return doFold("c");
+    if(st>0.74 && r<0.35 && S.chips.c>c+12){
+      const add=Math.min(S.chips.c-c, Math.max(10,Math.round(S.pot*0.5)));
       betPut("c",c+add); b.acted.c=true; b.acted.p=false; logLine(`{C} はレイズ（+${add}）。`);
     } else { betPut("c",c); b.acted.c=true; logLine(`{C} はコール（${c}）。`); }
   } else {
-    if((st>0.62 && r<0.6 || st<0.3 && r<0.16) && S.chips.c>6){
-      const add=Math.min(S.chips.c, Math.max(5, Math.round(S.pot*0.5)));
+    if(st>0.68 && r<0.5 && S.chips.c>12){
+      const add=Math.min(S.chips.c, Math.max(10,Math.round(S.pot*0.5)));
       betPut("c",add); b.acted.c=true; b.acted.p=false; logLine(`{C} はベット（${add}）。`);
     } else { b.acted.c=true; logLine("{C} はチェック。"); }
   }
   b.actor="p"; stepBet();
 }
 function cpuStrength(){
-  const h=S.hands.c[0], t=total(h.cards);
-  if(t>21) return .10; if(isNatural(h)) return .98;
-  if(t>=20) return .90; if(t>=19) return .80; if(t>=18) return .68;
-  if(t>=17) return .55; if(t>=15) return .38; if(t>=12) return .30; return .45;
+  const h=S.hands.c[0], t=handTotal(h);
+  if(isNatural(h)) return .98;
+  if(t>=20) return .90; if(t>=19) return .80; if(t>=18) return .70;
+  if(t>=17) return .58; if(t>=13) return .34; return .48;
 }
-function doFold(who){
-  const w=other(who);
+
+/* ---------- サレンダー ---------- */
+function startSurrender(seat){
+  S.phase="surrender";
+  const next = seat===nonDealer() ? ()=>startSurrender(S.dealer) : startDraw;
+  if(S.contrib[seat]<=0) return next();
+  if(isCPU(seat)){
+    const h=S.hands.c[0], t=handTotal(h);
+    const upCard=S.hands.p[0].cards[1], up = upCard.r==="A" ? 11 : V1(upCard.r);
+    if(t===16 && up>=10) { setTimeout(()=>doSurrender("c"),600);
+      return show({headline:"{C} が判断中…", sub:"サレンダーするか決めています。"}); }
+    return setTimeout(next,400);
+  }
+  const back=Math.floor(S.contrib[seat]/2);
+  show({actor:seat, headline:"サレンダー判断",
+    sub:{[seat]:`降りるなら拠出 ${S.contrib[seat]} のうち ${back} が戻ります。\n1枚でも引くと宣言できなくなります。`, [other(seat)]:""},
+    rows:[[
+      {t:"ドローへ進む", solid:true, f:next},
+      {t:`サレンダー（${back}戻る）`, f:()=>doSurrender(seat)}
+    ]]});
+}
+function doSurrender(seat){
+  const back=Math.floor(S.contrib[seat]/2), w=other(seat);
+  S.chips[seat]+=back; S.pot-=back;
   S.chips[w]+=S.pot;
-  logLine(`${tok(who)} がフォールド。${tok(w)} がポット ${S.pot} を獲得。`);
-  S.pot=0; S.phase="result";
-  show({ headline:{ [who]:"フォールドしました", [w]:"相手がフォールドしました" },
-    sub:`${tok(w)} がポットを獲得しました。`,
-    actor:"p", rows:[[{t:"次のハンドへ", f:nextHand, solid:true}]] });
+  logLine(`${tok(seat)} がサレンダー（${back} 返却）。${tok(w)} が ${S.pot} を獲得。`);
+  S.pot=0; endHand({[seat]:"サレンダーしました", [w]:"相手がサレンダーしました"}, "拠出の半分が戻りました。");
+}
+function doFold(seat){
+  const w=other(seat);
+  S.chips[w]+=S.pot;
+  logLine(`${tok(seat)} がフォールド。${tok(w)} が ${S.pot} を獲得。`);
+  S.pot=0; endHand({[seat]:"フォールドしました", [w]:"相手がフォールドしました"}, "");
 }
 
-/* ============================================================
-   6. ドローフェーズ
-   ============================================================ */
-function startDraw(){ S.phase="draw"; S.drawTurn=nonDealer(); S.handIdx=0; runDraw(); }
-function runDraw(){ if(isCPU(S.drawTurn)) setTimeout(cpuDraw,700); else renderDrawUI(S.drawTurn); }
-function endDrawFor(who){
-  if(who===nonDealer()){ S.drawTurn=S.dealer; S.handIdx=0; runDraw(); }
-  else startBetRound(3, showdown);
+/* ---------- ドローフェーズ ---------- */
+function startDraw(){ S.phase="draw"; S.turn=nonDealer(); S.handIdx=0; runDraw(); }
+function runDraw(){ if(isCPU(S.turn)) setTimeout(cpuDraw,650); else drawUI(S.turn); }
+function nextHandIdx(seat){
+  if(S.handIdx < S.hands[seat].length-1){ S.handIdx++; runDraw(); }
+  else if(seat===nonDealer()){ S.turn=S.dealer; S.handIdx=0; runDraw(); }
+  else showdown();
 }
-function advanceHand(who){
-  if(S.handIdx < S.hands[who].length-1){ S.handIdx++; runDraw(); }
-  else endDrawFor(who);
-}
-
-function renderDrawUI(seat){
+function drawUI(seat){
   const hs=S.hands[seat], h=hs[S.handIdx];
-  if(h.stood || isBust(h)) return advanceHand(seat);
-  const t=total(h.cards);
+  if(h.stood) return nextHandIdx(seat);
+  if(mustAutoStand(h)){
+    h.stood=true;
+    logLine(`${tok(seat)} は自動スタンド（これ以上引けば必ずバースト）。`);
+    return show({actor:seat, headline:"自動スタンド",
+      sub:{[seat]:"これ以上引けば必ずバーストするため、自動的にスタンドしました。", [other(seat)]:""},
+      rows:[[{t:"次へ",solid:true,f:()=>nextHandIdx(seat)}]]});
+  }
+  const t=handTotal(h);
   const canSplit = !S.split[seat] && hs.length===1 && h.cards.length===2
-                   && h.cards[0].r===h.cards[1].r && S.chips[seat]>0;
-  const canDD = !S.split[seat] && !S.bettingClosed && S.chips[seat]>0;
-  const label = hs.length>1 ? `（ハンド ${S.handIdx+1}／${hs.length}）` : "";
-  show({
-    actor:seat, headline:`ドローフェーズ${label}`,
-    sub:{ [seat]:`現在 ${t}。引いたカードの数値は相手に見えません（枚数のみ公開されます）。`,
-          [other(seat)]:"相手がカードを引いています。" },
+                   && V1(h.cards[0].r)===V1(h.cards[1].r) && S.chips[seat]>0;
+  const canDD = !S.split[seat] && !S.bettingClosed && S.chips[seat]>0 && h.cards.length===2;
+  const lbl = hs.length>1 ? `（ハンド ${S.handIdx+1}／2）` : "";
+  show({actor:seat, headline:`ドローフェーズ${lbl}`,
+    sub:{[seat]:`現在 ${t}${t>21?"（バースト）":""}。引いたカードは相手にも公開されますが、バーストしたことは伝わりません。`,
+         [other(seat)]:"相手がカードを引いています。"},
     rows:[
-      [ {t:"ヒット", f:()=>{ h.cards.push(S.deck.pop());
-            if(isBust(h)){ logLine(`${tok(seat)} はバースト。`); h.stood=true; advanceHand(seat); }
-            else renderDrawUI(seat); }},
-        {t:"スタンド", f:()=>{ h.stood=true; logLine(`${tok(seat)} はスタンド。`); advanceHand(seat); }},
-        {t:"スプリット", disabled:!canSplit, f:()=>doSplit(seat)} ],
-      [ {t:"ダブルダウン", disabled:!canDD, f:()=>doDD(seat)} ]
-    ]
-  });
+      [ {t:"ヒット", f:()=>{ h.cards.push(draw(false));
+            logLine(`${tok(seat)} がヒット → ${h.cards[h.cards.length-1].r}`); drawUI(seat); }},
+        {t:"スタンド", f:()=>{ h.stood=true; logLine(`${tok(seat)} はスタンド。`); nextHandIdx(seat); }} ],
+      [ {t:"ダブルダウン", disabled:!canDD, f:()=>doDD(seat)},
+        {t:"スプリット", disabled:!canSplit, f:()=>doSplit(seat)} ]
+    ]});
 }
 function doSplit(seat){
   const h=S.hands[seat][0];
   S.split[seat]=true;
+  const a={...h.cards[0], hidden:false}, b={...h.cards[1], hidden:false};
   S.hands[seat]=[
-    {cards:[h.cards[0]], stood:false, fromSplit:true},
-    {cards:[h.cards[1]], stood:false, fromSplit:true}
+    {cards:[a, draw(true)],  stood:false},   // 第1ハンド：伏せて付与
+    {cards:[b, draw(false)], stood:false}    // 第2ハンド：公開して付与
   ];
   S.handIdx=0;
-  logLine(`${tok(seat)} はスプリット。伏せ札が公開されました。`);
-  show({ actor:seat, headline:{ [seat]:"スプリットしました", [other(seat)]:"相手がスプリットしました" },
-    sub:"伏せ札が公開され、2つの独立した勝負になりました。ポットは等分されます。",
-    rows:[[{t:"次へ", f:()=>renderDrawUI(seat), solid:true}]] });
+  logLine(`${tok(seat)} がスプリット。伏せ札を公開し、各ハンドに1枚ずつ配りました。`);
+  show({actor:seat, headline:{[seat]:"スプリットしました",[other(seat)]:"相手がスプリットしました"},
+    sub:"第1ハンドは伏せて、第2ハンドは公開して1枚ずつ配られました。ポットは等分されます。",
+    rows:[[{t:"次へ",solid:true,f:()=>drawUI(seat)}]]});
 }
 function doDD(seat){
   const h=S.hands[seat][0], opp=other(seat);
   const add=Math.min(S.contrib[seat], S.chips[seat]);
   S.chips[seat]-=add; S.contrib[seat]+=add; S.pot+=add; S.dd[seat]=true;
-  h.cards.push(S.deck.pop()); h.stood=true;
-  logLine(`${tok(seat)} はダブルダウン（+${add}）。1枚引いて強制スタンド。`);
+  h.cards.push(draw(false)); h.stood=true;
+  logLine(`${tok(seat)} がダブルダウン（+${add}） → ${h.cards[h.cards.length-1].r}`);
   const need=Math.min(S.contrib[opp], S.chips[opp]);
-  if(need<=0){
-    return show({ actor:seat, headline:"ダブルダウン",
-      sub:"相手には追加投入の余力がありません。",
-      rows:[[{t:"次へ", f:()=>advanceHand(seat), solid:true}]] });
-  }
+  if(need<=0) return show({actor:seat, headline:"ダブルダウン", sub:"相手に追加投入の余力がありません。",
+    rows:[[{t:"次へ",solid:true,f:()=>nextHandIdx(seat)}]]});
+  const refund = ()=>{ if(need<add){ const b=add-need; S.chips[seat]+=b; S.contrib[seat]-=b; S.pot-=b;
+      logLine(`超過分 ${b} を ${tok(seat)} に返却。`); } };
   if(isCPU(opp)){
-    show({ headline:"ダブルダウン", sub:`${add} を追加投入しました。{C} が応じるか判断します…` });
-    return setTimeout(()=>cpuAnswerDD(seat,need), 900);
+    show({headline:"ダブルダウン", sub:`${add} を追加投入しました。{C} が判断しています…`});
+    return setTimeout(()=>{
+      if(cpuStrength()<0.26 && Math.random()<0.6) return doFold("c");
+      S.chips.c-=need; S.contrib.c+=need; S.pot+=need; refund();
+      logLine(`{C} は応じました（+${need}）。`);
+      show({actor:"p", headline:"{C} が応じました", sub:`{C} が ${need} を追加投入しました。`,
+        rows:[[{t:"次へ",solid:true,f:()=>nextHandIdx(seat)}]]});
+    }, 800);
   }
-  show({ actor:opp,
-    headline:{ [seat]:"ダブルダウンしました", [opp]:"相手がダブルダウン" },
-    sub:{ [seat]:`${add} を追加投入し、1枚引いて強制スタンドしました。相手の判断を待ちます。`,
-          [opp]:`応じるには ${need} の追加投入が必要です。応じても自分がDD扱いになるわけではありません。` },
+  show({actor:opp, headline:{[seat]:"ダブルダウンしました",[opp]:"相手がダブルダウン"},
+    sub:{[seat]:"相手の判断を待ちます。", [opp]:`応じるには ${need} の追加投入が必要です。応じてもDD扱いにはなりません。`},
     rows:[[
-      {t:`応じる +${need}`, solid:true, f:()=>{
-        S.chips[opp]-=need; S.contrib[opp]+=need; S.pot+=need;
-        logLine(`${tok(opp)} は応じました（+${need}）。`); advanceHand(seat); }},
+      {t:`応じる +${need}`, solid:true, f:()=>{ S.chips[opp]-=need; S.contrib[opp]+=need; S.pot+=need; refund();
+        logLine(`${tok(opp)} は応じました（+${need}）。`); nextHandIdx(seat); }},
       {t:"フォールド", f:()=>doFold(opp)}
-    ]] });
-}
-function cpuAnswerDD(seat, need){
-  const st=cpuStrength();
-  if((need>=S.chips.c && st<0.42 && Math.random()<0.5) || (st<0.24 && Math.random()<0.55)) return doFold("c");
-  S.chips.c-=need; S.contrib.c+=need; S.pot+=need;
-  logLine(`{C} は応じました（+${need}）。`);
-  show({ actor:"p", headline:"{C} が応じました",
-    sub:`{C} が ${need} を追加投入しました。{C} はまだカードを引いていません。`,
-    rows:[[{t:"次へ", f:()=>advanceHand(seat), solid:true}]] });
+    ]]});
 }
 function cpuDraw(){
   const hs=S.hands.c, h=hs[S.handIdx];
-  if(h.stood||isBust(h)) return advanceHand("c");
-  const t=total(h.cards);
-  if(!S.split.c && hs.length===1 && h.cards.length===2 && h.cards[0].r===h.cards[1].r && Math.random()<0.22){
-    S.split.c=true;
-    S.hands.c=[
-      {cards:[h.cards[0]], stood:false, fromSplit:true},
-      {cards:[h.cards[1]], stood:false, fromSplit:true}
-    ];
-    S.handIdx=0;
-    logLine("{C} はスプリット。伏せ札が公開されました。");
-    return show({ actor:"p", headline:"{C} がスプリットしました",
-      sub:"伏せ札が公開され、2つの勝負になりました。",
-      rows:[[{t:"次へ", f:()=>{ S.drawTurn="c"; S.handIdx=0; runDraw(); }, solid:true}]] });
+  if(h.stood) return nextHandIdx("c");
+  if(mustAutoStand(h)){ h.stood=true; logLine("{C} は自動スタンド。"); return nextHandIdx("c"); }
+  const t=handTotal(h);
+  if(!S.split.c && hs.length===1 && h.cards.length===2 && V1(h.cards[0].r)===8 && V1(h.cards[1].r)===8){
+    doSplit("c");
+    return show({actor:"p", headline:"{C} がスプリットしました",
+      sub:"第1ハンドは伏せて、第2ハンドは公開して1枚ずつ配られました。",
+      rows:[[{t:"次へ",solid:true,f:()=>{S.turn="c";S.handIdx=0;runDraw();}}]]});
   }
-  if(!S.split.c && !S.bettingClosed && S.chips.c>0 && h.cards.length===2 && t>=9 && t<=11 && Math.random()<0.34) return doDD("c");
-  if(t<=11 || (t<=16 && Math.random()<0.68)){
-    h.cards.push(S.deck.pop());
-    if(isBust(h)){ logLine("{C} はバースト。"); h.stood=true; return advanceHand("c"); }
-    show({ headline:"{C} がヒット", sub:"引いたカードの数値は伏せられています。" });
-    setTimeout(cpuDraw,700);
-  } else { h.stood=true; logLine("{C} はスタンド。"); advanceHand("c"); }
+  if(!S.split.c && !S.bettingClosed && S.chips.c>0 && h.cards.length===2 && (t===10||t===11)) return doDD("c");
+  if(t<16){
+    h.cards.push(draw(false));
+    logLine(`{C} がヒット → ${h.cards[h.cards.length-1].r}`);
+    show({headline:"{C} がヒット", sub:"引いたカードは公開されます。"});
+    return setTimeout(cpuDraw,650);
+  }
+  h.stood=true; logLine("{C} はスタンド。"); nextHandIdx("c");
 }
 
-/* ============================================================
-   7. ショーダウン
-   ============================================================ */
-function tieWinner(){ const nd=nonDealer();
+/* ---------- ショーダウン ---------- */
+const tieWinner = ()=>{ const nd=nonDealer();
   if(S.dd[nd]&&!S.dd[S.dealer]) return nd;
-  if(S.dd[S.dealer]&&!S.dd[nd]) return S.dealer;
-  return nd; }
-function bothBustWinner(){ const nd=nonDealer();
-  if(S.dd[nd]&&!S.dd[S.dealer]) return nd;
-  return S.dealer; }
-function compareHands(ha,hb){
-  const ba=isBust(ha), bb=isBust(hb);
+  if(S.dd[S.dealer]&&!S.dd[nd]) return S.dealer; return nd; };
+const bothBustWinner = ()=>{ const nd=nonDealer();
+  return (S.dd[nd]&&!S.dd[S.dealer]) ? nd : S.dealer; };
+function cmp(a,b){
+  const ba=isBust(a), bb=isBust(b);
   if(ba&&bb) return "bothbust";
   if(ba) return "b"; if(bb) return "a";
-  const na=isNatural(ha), nb=isNatural(hb);
+  const na=isNatural(a), nb=isNatural(b);
   if(na&&!nb) return "a"; if(nb&&!na) return "b";
-  const ta=total(ha.cards), tb=total(hb.cards);
+  const ta=handTotal(a), tb=handTotal(b);
   return ta>tb?"a":tb>ta?"b":"tie";
 }
-function splitEven(a,n){ const b=Math.floor(a/n), o=Array(n).fill(b);
-  let r=a-b*n; for(let i=0;i<n&&r>0;i++){o[i]++;r--;} return o; }
+function splitEven(x,n){ const b=Math.floor(x/n), o=Array(n).fill(b);
+  let r=x-b*n; for(let i=0;i<n&&r>0;i++){o[i]++;r--;} return o; }
 
 function showdown(){
-  S.phase="result"; S.revealAll=true;
-  const ph=S.hands.p, ch=S.hands.c;
-  const n=Math.max(ph.length,ch.length), shares=splitEven(S.pot,n);
-  let winP=0;
+  S.revealAll=true;
+  const ph=S.hands.p, ch=S.hands.c, n=Math.max(ph.length,ch.length);
+  const sh=splitEven(S.pot,n); let winP=0;
   for(let i=0;i<n;i++){
     const a=ph[Math.min(i,ph.length-1)], b=ch[Math.min(i,ch.length-1)];
-    const r=compareHands(a,b);
-    const winner = r==="tie" ? tieWinner() : r==="bothbust" ? bothBustWinner() : (r==="a"?"p":"c");
-    S.chips[winner]+=shares[i];
-    if(winner==="p") winP++;
-    const ta=total(a.cards), tb=total(b.cards);
-    const reason = r==="tie"?"引き分け" : r==="bothbust"?"両者バースト"
+    const r=cmp(a,b);
+    const w = r==="tie" ? tieWinner() : r==="bothbust" ? bothBustWinner() : (r==="a"?"p":"c");
+    S.chips[w]+=sh[i]; if(w==="p") winP++;
+    const ta=handTotal(a), tb=handTotal(b);
+    const why = r==="tie"?"引き分け" : r==="bothbust"?"両者バースト"
       : (isNatural(a)!==isNatural(b))?"ナチュラル":"";
-    logLine(`${n>1?`勝負${i+1}：`:""}{P} ${ta>21?"バースト":ta} ／ {C} ${tb>21?"バースト":tb} → ${tok(winner)}が${shares[i]}獲得${reason?`（${reason}）`:""}`);
+    logLine(`${n>1?`勝負${i+1}：`:""}{P} ${ta>21?"バースト":ta} ／ {C} ${tb>21?"バースト":tb} → ${tok(w)}が${sh[i]}獲得${why?`（${why}）`:""}`);
   }
   S.pot=0;
-  const headFor = seat => {
-    const w = seat==="p" ? winP : n-winP;
+  const head = s => { const w = s==="p"?winP:n-winP;
     if(n===1) return w===1 ? "あなたの勝ち" : "相手の勝ち";
-    return w===n ? "あなたの2勝" : w===0 ? "相手の2勝" : "1勝1敗";
-  };
-  show({ actor:"p", headline:{p:headFor("p"), c:headFor("c")},
-    sub:"ログで内訳を確認できます。",
-    rows:[[{t:"次のハンドへ", f:nextHand, solid:true}]] });
+    return w===n ? "あなたの2勝" : w===0 ? "相手の2勝" : "1勝1敗"; };
+  endHand({p:head("p"),c:head("c")}, "ログで内訳を確認できます。");
+}
+function endHand(headline, sub){
+  S.phase="result"; S.revealAll=true;
+  for(const seat of ["p","c"]) for(const h of S.hands[seat]) for(const c of h.cards) S.discard.push(c);
+  show({actor:"p", headline, sub, rows:[[{t:"次のハンドへ", solid:true, f:nextHand}]]});
 }
 function nextHand(){ S.dealer=other(S.dealer); newHand(); }
 function gameOver(){
-  S.phase="over"; S.revealAll=true;
-  const headFor = seat => S.chips[seat]>S.chips[other(seat)] ? "あなたの勝利" : "相手の勝利";
-  S.view=null;
-  show({ actor:"p",
-    headline:{p:headFor("p"), c:headFor("c")},
+  S.phase="over"; S.revealAll=true; S.view=null;
+  const head = s => S.chips[s]>S.chips[other(s)] ? "あなたの勝利" : "相手の勝利";
+  show({actor:"p", headline:{p:head("p"),c:head("c")},
     sub:`最終チップ　{P} ${S.chips.p} ／ {C} ${S.chips.c}`,
-    rows: [[{t:"もう一度", f:newGame, solid:true}]] });
+    rows:[[{t:"もう一度", solid:true, f:newGame}]]});
 }
 
-/* ============================================================
-   8. 接続（PeerJS）
-   ============================================================ */
-const WORDS_A=["azure","amber","brisk","clay","dusk","ember","frost","glass","ivory","jade",
-  "lunar","moss","nova","onyx","pearl","quartz","rust","slate","tide","umber","violet","wren"];
-const WORDS_B=["otter","falcon","bison","crane","dingo","eagle","ferret","gecko","heron","ibis",
-  "jackal","koi","lynx","marten","newt","owl","panda","quail","raven","seal","tapir","viper"];
-const rnd = a => a[Math.floor(Math.random()*a.length)];
-const makeWord = () => `${rnd(WORDS_A)}-${rnd(WORDS_B)}-${10+Math.floor(Math.random()*90)}`;
-const roomId = w => "bjduel-" + w.trim().toLowerCase().replace(/\s+/g,"-");
+/* ---------- 接続（自動再接続つき） ---------- */
+const WA=["azure","amber","brisk","clay","dusk","ember","frost","glass","ivory","jade","lunar","moss",
+  "nova","onyx","pearl","quartz","rust","slate","tide","umber","violet","wren"];
+const WB=["otter","falcon","bison","crane","dingo","eagle","ferret","gecko","heron","ibis","jackal","koi",
+  "lynx","marten","newt","owl","panda","quail","raven","seal","tapir","viper"];
+const rnd=a=>a[Math.floor(Math.random()*a.length)];
+const makeWord=()=>`${rnd(WA)}-${rnd(WB)}-${10+Math.floor(Math.random()*90)}`;
+const roomId=w=>"bjduel5-"+w.trim().toLowerCase().replace(/\s+/g,"-");
+
+let ROOM=null, retryT=null, started=false;
+const lobbyMsg = t => $("lobbyNote").textContent=t;
+function banner(t){ const b=$("netBanner"); if(t){ b.textContent=t; b.classList.add("on"); } else b.classList.remove("on"); }
+function killPeer(){ try{ peer && peer.destroy(); }catch(e){} peer=null; conn=null; }
 
 if(typeof Peer==="undefined"){
   $("btnHost").disabled=true; $("btnJoin").disabled=true;
   $("netNote").textContent="オンライン対戦の読み込みに失敗しました。通信環境を確認してください。";
 }
+$("btnCpu").onclick=()=>{ MODE="cpu"; banner(""); newGame(); };
 
-$("btnCpu").onclick = ()=>{ MODE="cpu"; newGame(); };
-
-$("btnHost").onclick = ()=>{
-  MODE="host";
-  const word=makeWord();
+/* --- ホスト --- */
+$("btnHost").onclick=()=>{
+  MODE="host"; started=false; S=null;
+  const word=makeWord(); ROOM=roomId(word);
   showScreen("scLobby");
   $("lobbyBody").innerHTML=`<p class="note" style="margin-bottom:14px">この合言葉を相手に伝えてください</p>
-    <div class="word">${word}</div>`;
-  $("lobbyActions").innerHTML="";
-  $("lobbyNote").textContent="相手の参加を待っています…";
-  peer=new Peer(roomId(word));
-  peer.on("error", e=>{
-    $("lobbyNote").textContent = e.type==="unavailable-id"
-      ? "この合言葉は使用中です。戻ってやり直してください。" : "接続エラー："+e.type;
-    backButton();
-  });
-  peer.on("connection", c=>{
-    if(conn && conn.open){ c.close(); return; }
-    conn=c;
-    c.on("open", ()=>{ $("lobbyNote").textContent="接続しました。"; newGame(); });
-    c.on("data", d=>{ if(d && d.type==="action" && S && S.view && S.view.actor==="c") runAction(d.id); });
-    c.on("close", ()=>lostPeer());
-  });
-  backButton();
+    <div class="word">${word}</div>
+    <p class="note" style="margin-top:12px">通話や他のアプリに切り替えても、戻れば自動で再接続します。</p>`;
+  $("lobbyActions").innerHTML=""; lobbyMsg("相手の参加を待っています…");
+  hostPeer(); backBtn();
 };
+function hostPeer(){
+  killPeer();
+  peer=new Peer(ROOM);
+  peer.on("disconnected",()=>{ try{ peer.reconnect(); }catch(e){} });
+  peer.on("error",e=>{
+    if(e.type==="unavailable-id" && !started){ lobbyMsg("この合言葉は使用中です。戻ってやり直してください。"); return; }
+    if(!started) lobbyMsg("接続エラー："+e.type+"（再試行します）");
+    clearTimeout(retryT);
+    retryT=setTimeout(()=>{ if(MODE==="host") hostPeer(); }, 2500);
+  });
+  peer.on("connection",c=>{
+    conn=c;
+    c.on("open",()=>{
+      banner("");
+      if(!started){ started=true; lobbyMsg("接続しました。"); newGame(); }
+      else pushView();
+    });
+    c.on("data",d=>{
+      if(!d) return;
+      if(d.type==="hello") return pushView();
+      if(d.type==="action" && S && S.view && S.view.actor==="c") runAction(d.id);
+    });
+    c.on("close",()=>{ if(MODE==="host" && started) banner("相手が離席中です。再接続を待っています…"); });
+    c.on("error",()=>{});
+  });
+}
+function pushView(){ if(S && S.view) sendMsg({type:"view", payload:buildPayload("c")}); }
 
-$("btnJoin").onclick = ()=>{
-  MODE="guest";
-  showScreen("scLobby");
+/* --- ゲスト --- */
+$("btnJoin").onclick=()=>{
+  MODE="guest"; started=false; showScreen("scLobby");
   $("lobbyBody").innerHTML=`<p class="note" style="margin-bottom:14px">相手から聞いた合言葉を入力してください</p>
-    <input class="field" id="wordIn" placeholder="azure-otter-41" autocapitalize="off" autocorrect="off" spellcheck="false">`;
+    <input class="field" id="wordIn" placeholder="azure-otter-41" autocapitalize="off" autocorrect="off" spellcheck="false">
+    <p class="note" style="margin-top:12px">通話や他のアプリに切り替えても、戻れば自動で再接続します。</p>`;
   $("lobbyActions").innerHTML="";
-  const btn=document.createElement("div"); btn.className="row";
+  const row=document.createElement("div"); row.className="row";
   const go=document.createElement("button"); go.className="act solid wide"; go.textContent="参加する";
-  btn.appendChild(go); $("lobbyActions").appendChild(btn);
-  $("lobbyNote").textContent="\u00a0";
+  row.appendChild(go); $("lobbyActions").appendChild(row); lobbyMsg("\u00a0");
   go.onclick=()=>{
     const w=$("wordIn").value.trim();
-    if(!w){ $("lobbyNote").textContent="合言葉を入力してください。"; return; }
-    go.disabled=true; $("lobbyNote").textContent="接続しています…";
-    peer=new Peer();
-    peer.on("open", ()=>{
-      conn=peer.connect(roomId(w), {reliable:true});
-      conn.on("open", ()=>{ $("lobbyNote").textContent="接続しました。"; });
-      conn.on("data", d=>{ if(d && d.type==="view") paint(d.payload, id=>send({type:"action", id})); });
-      conn.on("close", ()=>lostPeer());
-    });
-    peer.on("error", e=>{
-      go.disabled=false;
-      $("lobbyNote").textContent = e.type==="peer-unavailable"
-        ? "その合言葉の部屋が見つかりません。" : "接続エラー："+e.type;
-    });
+    if(!w) return lobbyMsg("合言葉を入力してください。");
+    go.disabled=true; ROOM=roomId(w); lobbyMsg("接続しています…"); guestPeer();
   };
-  backButton();
+  backBtn();
 };
+function guestPeer(){
+  killPeer();
+  peer=new Peer();
+  peer.on("open",guestConnect);
+  peer.on("disconnected",()=>{ try{ peer.reconnect(); }catch(e){} });
+  peer.on("error",e=>{
+    if(e.type==="peer-unavailable" && !started) lobbyMsg("その合言葉の部屋が見つかりません。再試行します…");
+    retryGuest();
+  });
+}
+function guestConnect(){
+  if(!peer || peer.destroyed) return retryGuest();
+  try{ conn=peer.connect(ROOM,{reliable:true}); }catch(e){ return retryGuest(); }
+  conn.on("open",()=>{ banner(""); lobbyMsg("接続しました。"); sendMsg({type:"hello"}); });
+  conn.on("data",d=>{
+    if(d && d.type==="view"){ started=true; banner("");
+      paint(d.payload, id=>sendMsg({type:"action", id})); }
+  });
+  conn.on("close",()=>{ if(MODE==="guest"){ banner("接続が切れました。再接続しています…"); retryGuest(); } });
+  conn.on("error",()=>retryGuest());
+}
+function retryGuest(){
+  if(MODE!=="guest") return;
+  clearTimeout(retryT);
+  retryT=setTimeout(()=>{
+    if(MODE!=="guest") return;
+    if(!peer || peer.destroyed) return guestPeer();
+    if(peer.disconnected){
+      try{ peer.reconnect(); }catch(e){}
+      setTimeout(()=>{ if(MODE==="guest" && (!conn||!conn.open)) guestConnect(); }, 1200);
+      return;
+    }
+    guestConnect();
+  }, 1500);
+}
 
-function backButton(){
+/* --- 復帰時の再接続（他アプリから戻ったとき） --- */
+function resume(){
+  if(document.visibilityState!=="visible") return;
+  if(MODE==="guest" && (!conn || !conn.open)){ banner("再接続しています…"); retryGuest(); }
+  if(MODE==="host"){
+    if(!peer || peer.destroyed) hostPeer();
+    else if(peer.disconnected){ try{ peer.reconnect(); }catch(e){} }
+    else pushView();
+  }
+}
+document.addEventListener("visibilitychange", resume);
+window.addEventListener("pageshow", resume);
+window.addEventListener("focus", resume);
+window.addEventListener("online", resume);
+
+function backBtn(){
   const row=document.createElement("div"); row.className="row";
   const b=document.createElement("button"); b.className="act sm"; b.textContent="タイトルへ戻る";
-  b.onclick=()=>{ try{peer&&peer.destroy();}catch(e){} peer=null; conn=null; MODE=null; showScreen("scTitle"); };
+  b.onclick=()=>{ clearTimeout(retryT); MODE=null; started=false; killPeer(); banner(""); showScreen("scTitle"); };
   row.appendChild(b); $("lobbyActions").appendChild(row);
-}
-function lostPeer(){
-  conn=null;
-  showScreen("scLobby");
-  $("lobbyBody").innerHTML=`<div class="word">切断</div>`;
-  $("lobbyActions").innerHTML="";
-  $("lobbyNote").textContent="相手との接続が切れました。タイトルからやり直してください。";
-  backButton();
 }
 </script>
 </body>
