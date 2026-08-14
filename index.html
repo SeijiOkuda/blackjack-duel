@@ -747,7 +747,7 @@ const roomBase=w=>"bjduel6-"+encodeURIComponent(normWord(w));
 const slotId=(w,n)=>roomBase(w)+"-s"+n;
 const rand32=()=>(Math.random()*0xFFFFFFFF)>>>0;
 
-let WORD="", SLOT=0, SEED=0, retryT=null, dialT=null;
+let WORD="", SLOT=0, SEED=0, retryT=null, dialT=null, hbT=null, lastRx=0;
 
 /* ---------- 保存 ---------- */
 const MEM={};
@@ -783,7 +783,7 @@ function banner(t){ const b=$("netBanner"); if(!b) return;
 function netMsg(t){ lobbyMsg(t); banner(S ? t : ""); }
 function sendMsg(o){ try{ conn && conn.open && conn.send(o); }catch(e){} }
 function killPeer(){ try{ peer && peer.destroy(); }catch(e){} peer=null; conn=null; SLOT=0; }
-function leaveAll(){ clearTimeout(retryT); clearTimeout(dialT); killPeer();
+function leaveAll(){ clearTimeout(retryT); clearTimeout(dialT); clearInterval(hbT); hbT=null; killPeer();
   MODE=null; WORD=""; HISTORY=[]; S=null; banner(""); }
 function backoff(fn, msg){
   if(MODE!=="online") return;
@@ -843,8 +843,9 @@ function claimSlot(n){
       if(n===1){ SEED=rand32(); newGame(SEED); }
     }
     saveSession();
-    netMsg(n===1 ? "相手の参加を待っています…" : "相手に接続しています…");
-    dial();
+    startHeartbeat();
+    if(n===2){ netMsg("相手に接続しています…"); dial(); }
+    else netMsg("相手の参加を待っています…");   // 席1は待つだけ。両側から呼ぶと接続が二重になる
   });
   peer.on("connection", c=>{
     if(conn && conn.open && conn!==c){ try{ conn.close(); }catch(e){} }
@@ -857,7 +858,8 @@ function claimSlot(n){
       return backoff(()=>claimSlot(1), "空き待ち。自動で入り直します…");
     }
     if(e.type==="peer-unavailable"){                        // 相手がまだ来ていない
-      return backoff(dial, SLOT===1 ? "相手の参加を待っています…" : "相手を探しています…");
+      if(SLOT===2) return backoff(dial, "相手を探しています…");
+      return netMsg("相手の参加を待っています…");
     }
     backoff(()=>claimSlot(n), "接続エラー："+e.type);
   });
@@ -865,7 +867,7 @@ function claimSlot(n){
 
 /* ---------- 相手の席へ呼び出す ---------- */
 function dial(){
-  if(MODE!=="online" || !peer || peer.destroyed || !SLOT) return;
+  if(MODE!=="online" || !peer || peer.destroyed || SLOT!==2) return;
   if(conn && conn.open) return;
   let c;
   try{ c=peer.connect(slotId(WORD, SLOT===1?2:1), {reliable:true}); }
@@ -887,12 +889,45 @@ function attach(c){
   c.on("close", ()=>{
     conn=null;
     // ここで peer を壊さない。壊すと自分の席を手放してしまう
-    if(MODE==="online") backoff(dial, "相手が離席中です。再接続を待っています…");
+    if(MODE!=="online") return;
+    if(SLOT===2) backoff(dial, "再接続しています…");
+    else netMsg("相手が離席中です。再接続を待っています…");
   });
-  c.on("error", ()=>{ if(MODE==="online") backoff(dial, "再接続しています…"); });
+  c.on("error", ()=>{ if(MODE==="online" && SLOT===2) backoff(dial, "再接続しています…"); });
+}
+
+/* 1.5秒ごとに互いの進捗を突き合わせ、取りこぼした行動を自動で補う */
+function startHeartbeat(){
+  clearInterval(hbT); lastRx=Date.now();
+  hbT=setInterval(()=>{
+    if(MODE!=="online") return;
+    if(!peer || peer.destroyed) return claimSlot(SLOT===2?2:1);
+    if(conn && conn.open){
+      sendMsg({type:"ping", n:HISTORY.length, seed:SEED});
+      if(Date.now()-lastRx > 9000){          // 応答が途絶えた接続は捨てる
+        try{ conn.close(); }catch(e){}
+        conn=null; lastRx=Date.now();
+        netMsg("応答がありません。つなぎ直しています…");
+        if(SLOT===2) dial();
+      }
+    } else if(SLOT===2) dial();
+  }, 1500);
 }
 
 function onMsg(d){
+  lastRx=Date.now();
+  if(d.type==="ping"){
+    if(d.seed!==SEED && HISTORY.length===0 && MYSEAT==="c"){ SEED=d.seed; sendMsg({type:"need", n:0}); return; }
+    if(d.n < HISTORY.length) sendMsg({type:"tail", from:d.n, ids:HISTORY.slice(d.n), seed:SEED});
+    else if(d.n > HISTORY.length) sendMsg({type:"need", n:HISTORY.length});
+    return;
+  }
+  if(d.type==="tail"){
+    if(d.seed!==SEED) return sendMsg({type:"need", n:0});
+    if(d.from===HISTORY.length){ for(const id of (d.ids||[])) if(!applyAction(id,true)) break; }
+    else if(d.from>HISTORY.length) sendMsg({type:"need", n:HISTORY.length});
+    return;
+  }
   if(d.type==="hello"){
     banner("");
     if(!HISTORY.length && !S){                 // まっさら → 相手に合わせる
@@ -912,7 +947,8 @@ function onMsg(d){
     return;
   }
   if(d.type==="need"){
-    sendMsg({type:"sync", seed:SEED, history:HISTORY, seat:other(MYSEAT)});
+    if(!d.n) sendMsg({type:"sync", seed:SEED, history:HISTORY, seat:other(MYSEAT)});
+    else if(d.n < HISTORY.length) sendMsg({type:"tail", from:d.n, ids:HISTORY.slice(d.n), seed:SEED});
     return;
   }
   if(d.type==="sync"){
@@ -923,7 +959,7 @@ function onMsg(d){
   }
   if(d.type==="act"){
     if(d.n === HISTORY.length+1) applyAction(d.id, true);
-    else if(d.n > HISTORY.length+1) sendMsg({type:"need"});
+    else if(d.n > HISTORY.length+1) sendMsg({type:"need", n:HISTORY.length});
     return;
   }
 }
@@ -932,10 +968,11 @@ function onMsg(d){
 function resume(){
   if(document.visibilityState!=="visible") return;
   if(MODE!=="online") return;
-  if(conn && conn.open){ sendMsg({type:"hello", seat:MYSEAT, seed:SEED, n:HISTORY.length}); return; }
+  startHeartbeat();
+  if(conn && conn.open){ sendMsg({type:"ping", n:HISTORY.length, seed:SEED}); return; }
   if(!peer || peer.destroyed) return claimSlot(SLOT===2?2:1);
   if(peer.disconnected){ try{ peer.reconnect(); }catch(e){} }
-  backoff(dial, "再接続しています…");
+  if(SLOT===2) backoff(dial, "再接続しています…");
 }
 document.addEventListener("visibilitychange", resume);
 window.addEventListener("pageshow", resume);
