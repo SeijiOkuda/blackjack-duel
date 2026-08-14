@@ -748,6 +748,7 @@ const slotId=(w,n)=>roomBase(w)+"-s"+n;
 const rand32=()=>(Math.random()*0xFFFFFFFF)>>>0;
 
 let WORD="", SLOT=0, SEED=0, retryT=null, dialT=null, hbT=null, lastRx=0;
+let SEATED=false;   // 一度でも席を確保できたか（MYSEAT の初期値と区別するため）
 
 /* ---------- 保存 ---------- */
 const MEM={};
@@ -783,7 +784,7 @@ function banner(t){ const b=$("netBanner"); if(!b) return;
 function netMsg(t){ lobbyMsg(t); banner(S ? t : ""); }
 function sendMsg(o){ try{ conn && conn.open && conn.send(o); }catch(e){} }
 function killPeer(){ try{ peer && peer.destroy(); }catch(e){} peer=null; conn=null; SLOT=0; }
-function leaveAll(){ clearTimeout(retryT); clearTimeout(dialT); clearInterval(hbT); hbT=null; killPeer();
+function leaveAll(){ clearTimeout(retryT); clearTimeout(dialT); clearInterval(hbT); hbT=null; SEATED=false; killPeer();
   MODE=null; WORD=""; HISTORY=[]; S=null; banner(""); }
 function backoff(fn, msg){
   if(MODE!=="online") return;
@@ -837,7 +838,7 @@ function claimSlot(n){
   netMsg(`席${n}を確保しています…`);
   peer=new Peer(slotId(WORD,n));
   peer.on("open",()=>{
-    SLOT=n;
+    SLOT=n; SEATED=true;
     if(!S && !HISTORY.length){
       MYSEAT = (n===1) ? "p" : "c";
       if(n===1){ SEED=rand32(); newGame(SEED); }
@@ -854,7 +855,10 @@ function claimSlot(n){
   peer.on("disconnected", ()=>{ try{ peer.reconnect(); }catch(e){} });
   peer.on("error", e=>{
     if(e.type==="unavailable-id"){
-      if(n===1) return claimSlot(2);                       // 席1は埋まっている → 席2へ
+      if(SEATED){    // 自分の席は決まっている。相手の席は取らず、解放を待つ
+        return backoff(()=>claimSlot(MYSEAT==="p"?1:2), "自分の席の解放を待っています…");
+      }
+      if(n===1) return claimSlot(2);                        // 席1が埋まっている → 席2へ
       return backoff(()=>claimSlot(1), "空き待ち。自動で入り直します…");
     }
     if(e.type==="peer-unavailable"){                        // 相手がまだ来ていない
@@ -901,7 +905,7 @@ function startHeartbeat(){
   clearInterval(hbT); lastRx=Date.now();
   hbT=setInterval(()=>{
     if(MODE!=="online") return;
-    if(!peer || peer.destroyed) return claimSlot(SLOT===2?2:1);
+    if(!peer || peer.destroyed) return claimSlot(MYSEAT==="p"?1:2);
     if(conn && conn.open){
       sendMsg({type:"ping", n:HISTORY.length, seed:SEED});
       if(Date.now()-lastRx > 9000){          // 応答が途絶えた接続は捨てる
@@ -970,15 +974,20 @@ function resume(){
   if(MODE!=="online") return;
   startHeartbeat();
   if(conn && conn.open){ sendMsg({type:"ping", n:HISTORY.length, seed:SEED}); return; }
-  if(!peer || peer.destroyed) return claimSlot(SLOT===2?2:1);
+  if(!peer || peer.destroyed) return claimSlot(MYSEAT==="p"?1:2);   // 席は自分の立場で決める
   if(peer.disconnected){ try{ peer.reconnect(); }catch(e){} }
   if(SLOT===2) backoff(dial, "再接続しています…");
+  else netMsg("相手の再接続を待っています…");
 }
 document.addEventListener("visibilitychange", resume);
 window.addEventListener("pageshow", resume);
 window.addEventListener("focus", resume);
 window.addEventListener("online", resume);
-window.addEventListener("pagehide", ()=>{ try{ peer && peer.destroy(); }catch(e){} });
+/* pagehide はアプリ切り替えでも発火する。ここで peer を壊すと自分の席を手放してしまうので何もしない。
+   本当にページが閉じられる時だけ、席を解放する。 */
+window.addEventListener("pagehide", e=>{ if(!e.persisted && document.visibilityState==="hidden" && CLOSING) killPeer(); });
+let CLOSING=false;
+window.addEventListener("beforeunload", ()=>{ CLOSING=true; });
 
 function backBtn(){
   const row=document.createElement("div"); row.className="row";
@@ -996,7 +1005,7 @@ function refreshResume(){
   const row=document.createElement("div"); row.className="row";
   const b=document.createElement("button"); b.className="act solid wide"; b.textContent=label;
   b.onclick=()=>{
-    MODE=d.mode; WORD=d.word||""; MYSEAT=d.seat||"p"; SEED=d.seed||1;
+    MODE=d.mode; WORD=d.word||""; MYSEAT=d.seat||"p"; SEED=d.seed||1; SEATED=(d.mode==="online");
     rebuild(SEED, d.history||[]);
     if(MODE==="online"){ banner("再接続しています…"); claimSlot(MYSEAT==="p"?1:2); }
   };
