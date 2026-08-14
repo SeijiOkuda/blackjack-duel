@@ -96,8 +96,9 @@
 
 <div class="screen on" id="scTitle"><div class="centered">
   <div class="brand"><h1>ブラックジャック<br>デュエル</h1><p>2人対戦 / RULES v5.1</p></div>
+  <div class="actions" id="resumeBox"></div>
   <div class="actions">
-    <div class="row"><button class="act solid wide" id="btnCpu">CPU と対戦</button></div>
+    <div class="row"><button class="act wide" id="btnCpu">CPU と対戦</button></div>
     <div class="row"><button class="act wide" id="btnHost">合言葉をつくる</button></div>
     <div class="row"><button class="act wide" id="btnJoin">合言葉で参加</button></div>
     <div class="row"><button class="act sm" id="btnRulesTitle">ルールを読む</button></div>
@@ -309,6 +310,7 @@ function newHand(){
   S.hands={ p:[mkHand()], c:[mkHand()] };
   post(S.dealer,ANTE_D); post(nonDealer(),ANTE_ND);
   logLine(`— ハンド ${S.handNo}：ディーラーは${tok(S.dealer)}（残り${S.shoe.length}枚）—`);
+  snapshot();
   startBet();
 }
 function mkHand(){
@@ -367,6 +369,51 @@ function buildPayload(viewer){
     log:S.log.slice(-12).map(l=>person(l,viewer))
   };
 }
+/* ---------- 保存と復帰 ---------- */
+const store={
+  get(k){ try{ return localStorage.getItem(k); }catch(e){ return MEM[k]||null; } },
+  set(k,v){ try{ localStorage.setItem(k,v); }catch(e){ MEM[k]=v; } },
+  del(k){ try{ localStorage.removeItem(k); }catch(e){ delete MEM[k]; } }
+};
+const MEM={};
+const SKEY="bjd_session_v1";
+
+/* ハンド開始時にだけ保存する。中断しても、そのハンドの配札からやり直せる */
+function snapshot(){
+  if(MODE!=="host" && MODE!=="cpu") return;
+  if(!S) return;
+  const {view,pending,bet,...rest}=S;
+  store.set(SKEY, JSON.stringify({mode:MODE, room:ROOM, word:WORD, s:rest}));
+}
+function saveGuestSession(){ store.set(SKEY, JSON.stringify({mode:"guest", room:ROOM, word:WORD, s:null})); }
+function loadSession(){ try{ const r=store.get(SKEY); return r?JSON.parse(r):null; }catch(e){ return null; } }
+function clearSession(){ store.del(SKEY); }
+
+function resumeSession(){
+  const d=loadSession(); if(!d) return false;
+  MODE=d.mode; ROOM=d.room||null; WORD=d.word||"";
+  if(MODE==="cpu"){ S=d.s; banner(""); startBet(); return true; }
+  if(MODE==="host"){
+    S=d.s; started=true;
+    showScreen("scLobby");
+    $("lobbyBody").innerHTML=`<p class="note" style="margin-bottom:14px">この合言葉で再開しています</p><div class="word">${WORD}</div>`;
+    $("lobbyActions").innerHTML=""; lobbyMsg("相手の再接続を待っています…");
+    backBtn(); hostPeer();
+    banner("相手の再接続を待っています…");
+    startBet();                       // そのハンドのベットラウンドから再開
+    return true;
+  }
+  if(MODE==="guest"){
+    started=false;
+    showScreen("scLobby");
+    $("lobbyBody").innerHTML=`<p class="note" style="margin-bottom:14px">この合言葉で再接続しています</p><div class="word">${WORD}</div>`;
+    $("lobbyActions").innerHTML=""; lobbyMsg("接続しています…");
+    backBtn(); guestPeer();
+    return true;
+  }
+  return false;
+}
+
 function show(view){
   // CPU戦では、CPU席に操作ボタンを割り当てると誰も押せなくなるため人間側へ寄せる
   if(MODE==="cpu" && view.actor==="c" && (view.rows||[]).length) view.actor="p";
@@ -567,8 +614,15 @@ function drawUI(seat){
                    && V1(h.cards[0].r)===V1(h.cards[1].r) && S.chips[seat]>0;
   const canDD = !S.split[seat] && !S.bettingClosed && S.chips[seat]>0 && h.cards.length===2;
   const lbl = hs.length>1 ? `（ハンド ${S.handIdx+1}／2）` : "";
+  let why="";
+  if(!canDD){
+    if(S.split[seat]) why="\nスプリット後はダブルダウンできません。";
+    else if(h.cards.length!==2) why="\nダブルダウンは初期2枚の状態でのみ宣言できます。";
+    else if(S.bettingClosed) why="\nオールインが成立しているため、これ以上賭け金を動かせません（ダブルダウン不可）。";
+    else if(S.chips[seat]<=0) why="\n持ち金がないためダブルダウンできません。";
+  }
   show({actor:seat, headline:`ドローフェーズ${lbl}`,
-    sub:{[seat]:`現在 ${t}${t>21?"（バースト）":""}。引いたカードは相手にも公開されますが、バーストしたことは伝わりません。`,
+    sub:{[seat]:`現在 ${t}${t>21?"（バースト）":""}。引いたカードは相手にも公開されますが、バーストしたことは伝わりません。`+why,
          [other(seat)]:"相手がカードを引いています。"},
     rows:[
       [ {t:"ヒット", f:()=>{ h.cards.push(draw(false));
@@ -694,48 +748,71 @@ function gameOver(){
     rows:[[{t:"もう一度", solid:true, f:newGame}]]});
 }
 
-/* ---------- 接続（自動再接続つき） ---------- */
+/* ---------- 接続（役割固定・自動再接続） ---------- */
 const WA=["azure","amber","brisk","clay","dusk","ember","frost","glass","ivory","jade","lunar","moss",
   "nova","onyx","pearl","quartz","rust","slate","tide","umber","violet","wren"];
 const WB=["otter","falcon","bison","crane","dingo","eagle","ferret","gecko","heron","ibis","jackal","koi",
   "lynx","marten","newt","owl","panda","quail","raven","seal","tapir","viper"];
 const rnd=a=>a[Math.floor(Math.random()*a.length)];
 const makeWord=()=>`${rnd(WA)}-${rnd(WB)}-${10+Math.floor(Math.random()*90)}`;
-const roomId=w=>"bjduel5-"+w.trim().toLowerCase().replace(/\s+/g,"-");
+const normWord=w=>w.trim().toLowerCase().replace(/[\s\u3000]+/g,"-").replace(/[^0-9a-z\u3040-\u30ff\u4e00-\u9fff-]/g,"");
+const roomId=w=>"bjduel5-"+encodeURIComponent(normWord(w));
 
-let ROOM=null, retryT=null, started=false;
+let ROOM=null, WORD="", retryT=null, started=false, connecting=false;
 const lobbyMsg = t => $("lobbyNote").textContent=t;
-function banner(t){ const b=$("netBanner"); if(t){ b.textContent=t; b.classList.add("on"); } else b.classList.remove("on"); }
-function killPeer(){ try{ peer && peer.destroy(); }catch(e){} peer=null; conn=null; }
+function banner(t){ const b=$("netBanner"); if(!b) return; if(t){ b.textContent=t; b.classList.add("on"); } else b.classList.remove("on"); }
+function killPeer(){ try{ peer && peer.destroy(); }catch(e){} peer=null; conn=null; connecting=false; }
+function leaveAll(){ clearTimeout(retryT); killPeer(); MODE=null; started=false; ROOM=null; WORD=""; banner(""); }
 
 if(typeof Peer==="undefined"){
   $("btnHost").disabled=true; $("btnJoin").disabled=true;
   $("netNote").textContent="オンライン対戦の読み込みに失敗しました。通信環境を確認してください。";
 }
-$("btnCpu").onclick=()=>{ MODE="cpu"; banner(""); newGame(); };
 
-/* --- ホスト --- */
+$("btnCpu").onclick=()=>{ leaveAll(); clearSession(); MODE="cpu"; banner(""); newGame(); };
+
+/* ============ ホスト ============ */
 $("btnHost").onclick=()=>{
+  leaveAll(); clearSession();
   MODE="host"; started=false; S=null;
-  const word=makeWord(); ROOM=roomId(word);
   showScreen("scLobby");
-  $("lobbyBody").innerHTML=`<p class="note" style="margin-bottom:14px">この合言葉を相手に伝えてください</p>
-    <div class="word">${word}</div>
-    <p class="note" style="margin-top:12px">通話や他のアプリに切り替えても、戻れば自動で再接続します。</p>`;
-  $("lobbyActions").innerHTML=""; lobbyMsg("相手の参加を待っています…");
-  hostPeer(); backBtn();
+  $("lobbyBody").innerHTML=`<p class="note" style="margin-bottom:12px">合言葉を決めて、相手に伝えてください</p>
+    <input class="field" id="hostWord" autocapitalize="off" autocorrect="off" spellcheck="false">
+    <p class="note" style="margin-top:12px">好きな言葉に変えられます。他の人と重なりにくいものを。</p>`;
+  $("hostWord").value = makeWord();
+  $("lobbyActions").innerHTML="";
+  const row=document.createElement("div"); row.className="row";
+  const go=document.createElement("button"); go.className="act solid wide"; go.textContent="この合言葉で部屋をつくる";
+  row.appendChild(go); $("lobbyActions").appendChild(row);
+  lobbyMsg("\u00a0"); backBtn();
+  go.onclick=()=>{
+    const w=$("hostWord").value;
+    if(!normWord(w)) return lobbyMsg("合言葉を入力してください。");
+    WORD=normWord(w); ROOM=roomId(WORD);
+    $("lobbyBody").innerHTML=`<p class="note" style="margin-bottom:14px">この合言葉を相手に伝えてください</p>
+      <div class="word">${WORD}</div>
+      <p class="note" style="margin-top:12px">他のアプリに切り替えても、戻れば自動で再接続します。</p>`;
+    $("lobbyActions").innerHTML=""; backBtn();
+    lobbyMsg("相手の参加を待っています…");
+    hostPeer();
+  };
 };
 function hostPeer(){
+  if(MODE!=="host") return;
   killPeer();
   peer=new Peer(ROOM);
+  peer.on("open",()=>{ if(!started) lobbyMsg("相手の参加を待っています…"); });
   peer.on("disconnected",()=>{ try{ peer.reconnect(); }catch(e){} });
   peer.on("error",e=>{
-    if(e.type==="unavailable-id" && !started){ lobbyMsg("この合言葉は使用中です。戻ってやり直してください。"); return; }
-    if(!started) lobbyMsg("接続エラー："+e.type+"（再試行します）");
+    if(e.type==="unavailable-id"){
+      // 直前の自分のセッションが残っている場合がある。少し待って再取得する
+      lobbyMsg(started ? "部屋を取り直しています…" : "この合言葉は使用中です。少し待つか、別の言葉にしてください。");
+    } else if(!started) lobbyMsg("接続エラー："+e.type+"（再試行します）");
     clearTimeout(retryT);
-    retryT=setTimeout(()=>{ if(MODE==="host") hostPeer(); }, 2500);
+    retryT=setTimeout(hostPeer, 3000);
   });
   peer.on("connection",c=>{
+    if(conn && conn.open && conn!==c){ try{ conn.close(); }catch(e){} }
     conn=c;
     c.on("open",()=>{
       banner("");
@@ -751,66 +828,74 @@ function hostPeer(){
     c.on("error",()=>{});
   });
 }
-function pushView(){ if(S && S.view) sendMsg({type:"view", payload:buildPayload("c")}); }
+function pushView(){ if(MODE==="host" && S && S.view) sendMsg({type:"view", payload:buildPayload("c")}); }
 
-/* --- ゲスト --- */
+/* ============ ゲスト ============ */
 $("btnJoin").onclick=()=>{
+  leaveAll(); clearSession();
   MODE="guest"; started=false; showScreen("scLobby");
-  $("lobbyBody").innerHTML=`<p class="note" style="margin-bottom:14px">相手から聞いた合言葉を入力してください</p>
+  $("lobbyBody").innerHTML=`<p class="note" style="margin-bottom:12px">相手から聞いた合言葉を入力してください</p>
     <input class="field" id="wordIn" placeholder="azure-otter-41" autocapitalize="off" autocorrect="off" spellcheck="false">
-    <p class="note" style="margin-top:12px">通話や他のアプリに切り替えても、戻れば自動で再接続します。</p>`;
+    <p class="note" style="margin-top:12px">他のアプリに切り替えても、戻れば自動で再接続します。</p>`;
   $("lobbyActions").innerHTML="";
   const row=document.createElement("div"); row.className="row";
   const go=document.createElement("button"); go.className="act solid wide"; go.textContent="参加する";
-  row.appendChild(go); $("lobbyActions").appendChild(row); lobbyMsg("\u00a0");
+  row.appendChild(go); $("lobbyActions").appendChild(row); lobbyMsg("\u00a0"); backBtn();
   go.onclick=()=>{
-    const w=$("wordIn").value.trim();
-    if(!w) return lobbyMsg("合言葉を入力してください。");
-    go.disabled=true; ROOM=roomId(w); lobbyMsg("接続しています…"); guestPeer();
+    const w=$("wordIn").value;
+    if(!normWord(w)) return lobbyMsg("合言葉を入力してください。");
+    go.disabled=true; WORD=normWord(w); ROOM=roomId(WORD);
+    saveGuestSession();
+    lobbyMsg("接続しています…"); guestPeer();
   };
-  backBtn();
 };
 function guestPeer(){
+  if(MODE!=="guest") return;
   killPeer();
   peer=new Peer();
   peer.on("open",guestConnect);
   peer.on("disconnected",()=>{ try{ peer.reconnect(); }catch(e){} });
   peer.on("error",e=>{
-    if(e.type==="peer-unavailable" && !started) lobbyMsg("その合言葉の部屋が見つかりません。再試行します…");
+    connecting=false;
+    if(e.type==="peer-unavailable") lobbyMsg("部屋が見つかりません。ホストの再接続を待っています…");
     retryGuest();
   });
 }
 function guestConnect(){
+  if(MODE!=="guest") return;
+  if(conn && conn.open) return;
+  if(connecting) return;
   if(!peer || peer.destroyed) return retryGuest();
-  try{ conn=peer.connect(ROOM,{reliable:true}); }catch(e){ return retryGuest(); }
-  conn.on("open",()=>{ banner(""); lobbyMsg("接続しました。"); sendMsg({type:"hello"}); });
-  conn.on("data",d=>{
+  connecting=true;
+  let c;
+  try{ c=peer.connect(ROOM,{reliable:true}); }catch(e){ connecting=false; return retryGuest(); }
+  conn=c;
+  c.on("open",()=>{ connecting=false; banner(""); lobbyMsg("接続しました。"); sendMsg({type:"hello"}); });
+  c.on("data",d=>{
     if(d && d.type==="view"){ started=true; banner("");
       paint(d.payload, id=>sendMsg({type:"action", id})); }
   });
-  conn.on("close",()=>{ if(MODE==="guest"){ banner("接続が切れました。再接続しています…"); retryGuest(); } });
-  conn.on("error",()=>retryGuest());
+  c.on("close",()=>{ connecting=false;
+    if(MODE==="guest"){ banner("接続が切れました。再接続しています…"); retryGuest(); } });
+  c.on("error",()=>{ connecting=false; retryGuest(); });
 }
 function retryGuest(){
   if(MODE!=="guest") return;
   clearTimeout(retryT);
   retryT=setTimeout(()=>{
     if(MODE!=="guest") return;
+    if(conn && conn.open) return;
     if(!peer || peer.destroyed) return guestPeer();
-    if(peer.disconnected){
-      try{ peer.reconnect(); }catch(e){}
-      setTimeout(()=>{ if(MODE==="guest" && (!conn||!conn.open)) guestConnect(); }, 1200);
-      return;
-    }
+    if(peer.disconnected){ try{ peer.reconnect(); }catch(e){} setTimeout(guestConnect,1200); return; }
     guestConnect();
-  }, 1500);
+  }, 2000);
 }
 
-/* --- 復帰時の再接続（他アプリから戻ったとき） --- */
+/* ============ 復帰 ============ */
 function resume(){
   if(document.visibilityState!=="visible") return;
-  if(MODE==="guest" && (!conn || !conn.open)){ banner("再接続しています…"); retryGuest(); }
-  if(MODE==="host"){
+  if(MODE==="guest"){ if(!conn||!conn.open){ banner("再接続しています…"); retryGuest(); } }
+  else if(MODE==="host"){
     if(!peer || peer.destroyed) hostPeer();
     else if(peer.disconnected){ try{ peer.reconnect(); }catch(e){} }
     else pushView();
@@ -823,10 +908,29 @@ window.addEventListener("online", resume);
 
 function backBtn(){
   const row=document.createElement("div"); row.className="row";
-  const b=document.createElement("button"); b.className="act sm"; b.textContent="タイトルへ戻る";
-  b.onclick=()=>{ clearTimeout(retryT); MODE=null; started=false; killPeer(); banner(""); showScreen("scTitle"); };
+  const b=document.createElement("button"); b.className="act sm"; b.textContent="やめてタイトルへ";
+  b.onclick=()=>{ leaveAll(); clearSession(); showScreen("scTitle"); refreshResume(); };
   row.appendChild(b); $("lobbyActions").appendChild(row);
 }
+
+/* ============ 起動時：前回の役割で復帰 ============ */
+function refreshResume(){
+  const d=loadSession();
+  const box=$("resumeBox");
+  if(!d){ box.innerHTML=""; return; }
+  const role = d.mode==="host" ? "ホスト" : d.mode==="guest" ? "ゲスト" : "CPU戦";
+  const label = d.mode==="cpu" ? "CPU戦のつづきから" : `つづきから（${role}／${d.word||""}）`;
+  box.innerHTML="";
+  const row=document.createElement("div"); row.className="row";
+  const b=document.createElement("button"); b.className="act solid wide"; b.textContent=label;
+  b.onclick=()=>{ if(!resumeSession()){ clearSession(); refreshResume(); } };
+  row.appendChild(b); box.appendChild(row);
+  const row2=document.createElement("div"); row2.className="row";
+  const b2=document.createElement("button"); b2.className="act sm"; b2.textContent="前回の記録を消す";
+  b2.onclick=()=>{ clearSession(); refreshResume(); };
+  row2.appendChild(b2); box.appendChild(row2);
+}
+refreshResume();
 </script>
 </body>
 </html>
