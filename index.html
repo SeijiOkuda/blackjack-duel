@@ -731,7 +731,9 @@ function gameOver(){
    ------------------------------------------------------------
    両端末が同じ種から同じ山札を作り、同じエンジンを動かす。
    やり取りするのは「どのボタンを押したか」だけ。
-   同じ順序で同じ関数を実行するので、状態は必ず一致する。
+
+   部屋は「席1」「席2」の2つのIDを用意する。
+   席1が取れなければ席2を取るので、2人が同じIDを奪い合わない。
    ============================================================ */
 const WA=["azure","amber","brisk","clay","dusk","ember","frost","glass","ivory","jade","lunar","moss",
   "nova","onyx","pearl","quartz","rust","slate","tide","umber","violet","wren"];
@@ -741,9 +743,11 @@ const pickOne=a=>a[Math.floor(Math.random()*a.length)];
 const makeWord=()=>`${pickOne(WA)}-${pickOne(WB)}-${10+Math.floor(Math.random()*90)}`;
 const normWord=w=>String(w||"").trim().toLowerCase()
   .replace(/[\s\u3000]+/g,"-").replace(/[^0-9a-z\u3040-\u30ff\u4e00-\u9fff-]/g,"");
-const roomId=w=>"bjduel6-"+encodeURIComponent(normWord(w));
+const roomBase=w=>"bjduel6-"+encodeURIComponent(normWord(w));
+const slotId=(w,n)=>roomBase(w)+"-s"+n;
+const rand32=()=>(Math.random()*0xFFFFFFFF)>>>0;
 
-let WORD="", ROOM=null, SEED=0, retryT=null, phase="idle";
+let WORD="", SLOT=0, SEED=0, retryT=null, dialT=null;
 
 /* ---------- 保存 ---------- */
 const MEM={};
@@ -752,7 +756,7 @@ const store={
   set(k,v){ try{ localStorage.setItem(k,v); }catch(e){ MEM[k]=v; } },
   del(k){ try{ localStorage.removeItem(k); }catch(e){ delete MEM[k]; } }
 };
-const SKEY="bjd_lockstep_v1";
+const SKEY="bjd_lockstep_v2";
 function saveSession(){
   if(!MODE) return;
   store.set(SKEY, JSON.stringify({mode:MODE, word:WORD, seat:MYSEAT, seed:SEED, history:HISTORY}));
@@ -762,26 +766,31 @@ function clearSession(){ store.del(SKEY); }
 
 /* ---------- 履歴の再生 ---------- */
 function rebuild(seed, history){
-  REPLAY=true;
-  HISTORY=[];
-  newGame(seed);
-  for(const id of history){
-    if(!(S.pending && S.pending[id])) break;   // 食い違ったらそこで止める
+  REPLAY=true; HISTORY=[]; newGame(seed);
+  for(const id of (history||[])){
+    if(!(S.pending && S.pending[id])) break;
     const f=S.pending[id]; S.pending={}; HISTORY.push(id); f();
   }
   REPLAY=false;
-  if(S.view) show(S.view);                      // 現在の画面を描き直す
+  if(S.view) show(S.view);
   saveSession();
 }
 
-/* ---------- 画面ヘルパ ---------- */
-const lobbyMsg = t => $("lobbyNote").textContent=t;
+/* ---------- 画面 ---------- */
+const lobbyMsg = t => { const n=$("lobbyNote"); if(n) n.textContent=t; };
 function banner(t){ const b=$("netBanner"); if(!b) return;
   if(t){ b.textContent=t; b.classList.add("on"); } else b.classList.remove("on"); }
+function netMsg(t){ lobbyMsg(t); banner(S ? t : ""); }
 function sendMsg(o){ try{ conn && conn.open && conn.send(o); }catch(e){} }
-function killPeer(){ try{ peer && peer.destroy(); }catch(e){} peer=null; conn=null; }
-function leaveAll(){ clearTimeout(retryT); killPeer(); MODE=null; phase="idle";
-  WORD=""; ROOM=null; HISTORY=[]; S=null; banner(""); }
+function killPeer(){ try{ peer && peer.destroy(); }catch(e){} peer=null; conn=null; SLOT=0; }
+function leaveAll(){ clearTimeout(retryT); clearTimeout(dialT); killPeer();
+  MODE=null; WORD=""; HISTORY=[]; S=null; banner(""); }
+function backoff(fn, msg){
+  if(MODE!=="online") return;
+  if(msg) netMsg(msg);
+  clearTimeout(retryT);
+  retryT=setTimeout(fn, 1200 + Math.random()*2000);   // ずらして同時衝突を避ける
+}
 
 if(typeof Peer==="undefined"){
   $("btnOnline").disabled=true;
@@ -791,18 +800,18 @@ if(typeof Peer==="undefined"){
 /* ---------- CPU戦 ---------- */
 $("btnCpu").onclick=()=>{
   leaveAll(); clearSession();
-  MODE="cpu"; MYSEAT="p"; HISTORY=[]; SEED=(Math.random()*0xFFFFFFFF)>>>0;
+  MODE="cpu"; MYSEAT="p"; HISTORY=[]; SEED=rand32();
   banner(""); newGame(SEED); saveSession();
 };
 
-/* ---------- オンライン：合言葉ひとつ ---------- */
+/* ---------- オンライン ---------- */
 $("btnOnline").onclick=()=>{
   leaveAll(); clearSession();
   MODE="online"; showScreen("scLobby");
   $("lobbyBody").innerHTML=`<p class="note" style="margin-bottom:12px">合言葉を決めて、相手にも同じものを入力してもらってください</p>
     <input class="field" id="wordIn" autocapitalize="off" autocorrect="off" spellcheck="false">
-    <p class="note" style="margin-top:12px">先に入った方が席を取り、後から来た方がもう一方の席に入ります。
-    どちらが「作る側」かを決める必要はありません。</p>`;
+    <p class="note" style="margin-top:12px">先に入った方が席1、後から来た方が席2に入ります。
+    どちらが部屋を作るかを決める必要はありません。</p>`;
   $("wordIn").value = makeWord();
   $("lobbyActions").innerHTML="";
   const row=document.createElement("div"); row.className="row";
@@ -812,118 +821,109 @@ $("btnOnline").onclick=()=>{
   go.onclick=()=>{
     const w=normWord($("wordIn").value);
     if(!w) return lobbyMsg("合言葉を入力してください。");
-    WORD=w; ROOM=roomId(w); go.disabled=true;
+    WORD=w; go.disabled=true;
     $("lobbyBody").innerHTML=`<p class="note" style="margin-bottom:14px">合言葉</p><div class="word">${WORD}</div>`;
     $("lobbyActions").innerHTML=""; backBtn();
-    enterRoom();
+    claimSlot(1);
   };
 };
 
 /* ============================================================
-   入室：まず参加を試し、いなければ自分が部屋を持つ
+   席の確保（席1を試し、埋まっていたら席2）
    ============================================================ */
-function enterRoom(){
+function claimSlot(n){
   if(MODE!=="online") return;
-  phase="probing";
-  lobbyMsg("相手を探しています…");
   killPeer();
-  peer=new Peer();                       // ランダムIDで様子を見る
-  let settled=false;
-  const done=()=>{ settled=true; clearTimeout(t); };
-  const t=setTimeout(()=>{ if(!settled){ done(); becomeOwner(); } }, 4500);
+  netMsg(`席${n}を確保しています…`);
+  peer=new Peer(slotId(WORD,n));
   peer.on("open",()=>{
-    let probe;
-    try{ probe=peer.connect(ROOM,{reliable:true}); }catch(e){ if(!settled){ done(); becomeOwner(); } return; }
-    probe.on("open",()=>{ if(settled) return; done(); attach(probe, false); });
-    probe.on("error",()=>{ if(!settled){ done(); becomeOwner(); } });
-  });
-  peer.on("error",e=>{
-    if(settled) return;
-    if(e.type==="peer-unavailable"){ done(); becomeOwner(); }
-    else { done(); scheduleRetry("接続エラー："+e.type); }
-  });
-  peer.on("disconnected",()=>{ try{ peer.reconnect(); }catch(e){} });
-}
-
-function becomeOwner(){
-  if(MODE!=="online") return;
-  phase="owning";
-  killPeer();
-  peer=new Peer(ROOM);
-  peer.on("open",()=>{
-    if(!HISTORY.length && !S){
-      MYSEAT="p";
-      SEED=(Math.random()*0xFFFFFFFF)>>>0;
+    SLOT=n;
+    if(!S && !HISTORY.length){
+      MYSEAT = (n===1) ? "p" : "c";
+      if(n===1){ SEED=rand32(); newGame(SEED); }
     }
-    lobbyMsg("相手の参加を待っています…");
-    banner("相手の参加を待っています…");
     saveSession();
+    netMsg(n===1 ? "相手の参加を待っています…" : "相手に接続しています…");
+    dial();
   });
-  peer.on("disconnected",()=>{ try{ peer.reconnect(); }catch(e){} });
-  peer.on("error",e=>{
-    if(e.type==="unavailable-id"){
-      // 相手が先に部屋を取ったか、自分の前回の接続がまだ残っている
-      scheduleRetry("部屋が使用中です。解放を待って自動で入り直します…");
-    } else scheduleRetry("接続エラー："+e.type);
-  });
-  peer.on("connection",c=>{
+  peer.on("connection", c=>{
     if(conn && conn.open && conn!==c){ try{ conn.close(); }catch(e){} }
-    attach(c, true);
+    attach(c);
+  });
+  peer.on("disconnected", ()=>{ try{ peer.reconnect(); }catch(e){} });
+  peer.on("error", e=>{
+    if(e.type==="unavailable-id"){
+      if(n===1) return claimSlot(2);                       // 席1は埋まっている → 席2へ
+      return backoff(()=>claimSlot(1), "空き待ち。自動で入り直します…");
+    }
+    if(e.type==="peer-unavailable"){                        // 相手がまだ来ていない
+      return backoff(dial, SLOT===1 ? "相手の参加を待っています…" : "相手を探しています…");
+    }
+    backoff(()=>claimSlot(n), "接続エラー："+e.type);
   });
 }
 
-function scheduleRetry(msg){
-  if(MODE!=="online") return;
-  lobbyMsg(msg); banner(msg);
-  clearTimeout(retryT);
-  retryT=setTimeout(enterRoom, 3500);     // 参加の試行からやり直す
+/* ---------- 相手の席へ呼び出す ---------- */
+function dial(){
+  if(MODE!=="online" || !peer || peer.destroyed || !SLOT) return;
+  if(conn && conn.open) return;
+  let c;
+  try{ c=peer.connect(slotId(WORD, SLOT===1?2:1), {reliable:true}); }
+  catch(e){ return backoff(dial, "相手を待っています…"); }
+  let ok=false;
+  c.on("open", ()=>{ ok=true; attach(c); });
+  c.on("error", ()=>{ if(!ok) backoff(dial, "相手を待っています…"); });
+  clearTimeout(dialT);
+  dialT=setTimeout(()=>{ if(!ok && (!conn || !conn.open)) backoff(dial, "相手を待っています…"); }, 6000);
 }
 
-/* ---------- 接続後の同期 ---------- */
-function attach(c, iAmOwner){
+/* ---------- 接続後 ---------- */
+function attach(c){
   conn=c;
-  const helloOut=()=>sendMsg({type:"hello", seat:MYSEAT, seed:SEED, n:HISTORY.length, owner:iAmOwner});
-  if(c.open) helloOut(); else c.on("open",()=>{ banner(""); lobbyMsg("接続しました。"); helloOut(); });
-  c.on("data",d=>{ if(d) onMsg(d, iAmOwner); });
-  c.on("close",()=>{ if(MODE==="online"){ banner("相手が離席中です。再接続を待っています…"); scheduleRetry("再接続しています…"); } });
-  c.on("error",()=>{});
+  const hello=()=>{ banner(""); lobbyMsg("接続しました。");
+    sendMsg({type:"hello", seat:MYSEAT, seed:SEED, n:HISTORY.length}); };
+  if(c.open) hello(); else c.on("open", hello);
+  c.on("data", d=>{ if(d) onMsg(d); });
+  c.on("close", ()=>{
+    conn=null;
+    // ここで peer を壊さない。壊すと自分の席を手放してしまう
+    if(MODE==="online") backoff(dial, "相手が離席中です。再接続を待っています…");
+  });
+  c.on("error", ()=>{ if(MODE==="online") backoff(dial, "再接続しています…"); });
 }
 
-function onMsg(d, iAmOwner){
+function onMsg(d){
   if(d.type==="hello"){
     banner("");
-    // 席が衝突したら、進んでいる方を優先し、遅れている方が反対の席に回る
-    if(d.seat===MYSEAT){
-      if(HISTORY.length < d.n || (HISTORY.length===d.n && !iAmOwner)) MYSEAT=other(MYSEAT);
-    } else if(!S && !HISTORY.length){
-      MYSEAT=other(d.seat);
+    if(!HISTORY.length && !S){                 // まっさら → 相手に合わせる
+      MYSEAT=other(d.seat); SEED=d.seed;
+      if(d.n>0) sendMsg({type:"need"}); else { newGame(SEED); saveSession(); }
+      return;
     }
-    if(!S || (d.n > HISTORY.length) || (SEED!==d.seed && !HISTORY.length)){
-      // 相手の方が進んでいる（または自分が空）→ 相手の記録を要求
-      SEED=d.seed;
-      sendMsg({type:"need", seat:MYSEAT});
-    } else {
+    if(d.seat===MYSEAT){                       // 席の衝突 → 記録の多い方が残る
+      if(HISTORY.length < d.n || (HISTORY.length===d.n && SLOT===2)) MYSEAT=other(MYSEAT);
+    }
+    if(d.n > HISTORY.length || (d.n===HISTORY.length && SEED!==d.seed && MYSEAT==="c")){
+      SEED=d.seed; sendMsg({type:"need"});
+    } else if(d.n < HISTORY.length || (SEED!==d.seed && MYSEAT==="p")){
       sendMsg({type:"sync", seed:SEED, history:HISTORY, seat:other(MYSEAT)});
     }
     saveSession();
     return;
   }
   if(d.type==="need"){
-    MYSEAT = d.seat==="p" ? "c" : "p";
     sendMsg({type:"sync", seed:SEED, history:HISTORY, seat:other(MYSEAT)});
-    saveSession();
     return;
   }
   if(d.type==="sync"){
-    MYSEAT = d.seat;
-    SEED = d.seed;
-    rebuild(SEED, d.history||[]);
+    MYSEAT=d.seat; SEED=d.seed;
+    rebuild(SEED, d.history);
     banner("");
     return;
   }
   if(d.type==="act"){
     if(d.n === HISTORY.length+1) applyAction(d.id, true);
-    else if(d.n > HISTORY.length+1) sendMsg({type:"need", seat:MYSEAT});   // 取りこぼし
+    else if(d.n > HISTORY.length+1) sendMsg({type:"need"});
     return;
   }
 }
@@ -933,8 +933,9 @@ function resume(){
   if(document.visibilityState!=="visible") return;
   if(MODE!=="online") return;
   if(conn && conn.open){ sendMsg({type:"hello", seat:MYSEAT, seed:SEED, n:HISTORY.length}); return; }
-  banner("再接続しています…");
-  clearTimeout(retryT); retryT=setTimeout(enterRoom, 400);
+  if(!peer || peer.destroyed) return claimSlot(SLOT===2?2:1);
+  if(peer.disconnected){ try{ peer.reconnect(); }catch(e){} }
+  backoff(dial, "再接続しています…");
 }
 document.addEventListener("visibilitychange", resume);
 window.addEventListener("pageshow", resume);
@@ -951,8 +952,7 @@ function backBtn(){
 
 /* ---------- 起動時：前回のつづき ---------- */
 function refreshResume(){
-  const d=loadSession(); const box=$("resumeBox");
-  if(!box) return;
+  const d=loadSession(); const box=$("resumeBox"); if(!box) return;
   if(!d || !d.mode){ box.innerHTML=""; return; }
   box.innerHTML="";
   const label = d.mode==="cpu" ? "CPU戦のつづきから" : `つづきから（${d.word||""}）`;
@@ -960,9 +960,8 @@ function refreshResume(){
   const b=document.createElement("button"); b.className="act solid wide"; b.textContent=label;
   b.onclick=()=>{
     MODE=d.mode; WORD=d.word||""; MYSEAT=d.seat||"p"; SEED=d.seed||1;
-    ROOM=WORD?roomId(WORD):null;
     rebuild(SEED, d.history||[]);
-    if(MODE==="online"){ banner("再接続しています…"); enterRoom(); }
+    if(MODE==="online"){ banner("再接続しています…"); claimSlot(MYSEAT==="p"?1:2); }
   };
   row.appendChild(b); box.appendChild(row);
   const row2=document.createElement("div"); row2.className="row";
