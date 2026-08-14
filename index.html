@@ -235,7 +235,6 @@
   <button class="act solid wide" id="closeSheet">閉じる</button>
 </div></div>
 
-<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script>
 
 "use strict";
@@ -366,7 +365,8 @@ function countsFor(viewer){
 }
 function buildPayload(viewer){
   const v=S.view||{}, opp=other(viewer);
-  const mine=v.actor===viewer, waiting=v.actor && v.actor!==viewer;
+  const mine=(v.actor===viewer || v.actor==="any");
+  const waiting=v.actor && v.actor!=="any" && v.actor!==viewer;
   let sub=person(pick(v.sub,viewer),viewer);
   if(waiting) sub=(sub?sub+"\n":"")+"（相手の操作を待っています）";
   return {
@@ -582,8 +582,9 @@ function drawUI(seat){
   if(mustAutoStand(h)){
     h.stood=true;
     logLine(`${tok(seat)} は自動スタンド（これ以上引けば必ずバースト）。`);
-    return show({actor:seat, headline:"自動スタンド",
-      sub:{[seat]:"これ以上引けば必ずバーストするため、自動的にスタンドしました。", [other(seat)]:""},
+    return show({actor:"any", headline:"自動スタンド",
+      sub:{[seat]:"これ以上引けば必ずバーストするため、自動的にスタンドしました。",
+           [other(seat)]:"相手はこれ以上引けないため、自動的にスタンドしました。"},
       rows:[[{t:"次へ",solid:true,f:()=>nextHandIdx(seat)}]]});
   }
   const t=handTotal(h);
@@ -619,7 +620,7 @@ function doSplit(seat){
   ];
   S.handIdx=0;
   logLine(`${tok(seat)} がスプリット。伏せ札を公開し、各ハンドに1枚ずつ配りました。`);
-  show({actor:seat, headline:{[seat]:"スプリットしました",[other(seat)]:"相手がスプリットしました"},
+  show({actor:"any", headline:{[seat]:"スプリットしました",[other(seat)]:"相手がスプリットしました"},
     sub:"第1ハンドは伏せて、第2ハンドは公開して1枚ずつ配られました。ポットは等分されます。",
     rows:[[{t:"次へ",solid:true,f:()=>drawUI(seat)}]]});
 }
@@ -630,7 +631,7 @@ function doDD(seat){
   h.cards.push(draw(false)); h.stood=true;
   logLine(`${tok(seat)} がダブルダウン（+${add}） → ${h.cards[h.cards.length-1].r}`);
   const need=Math.min(S.contrib[opp], S.chips[opp]);
-  if(need<=0) return show({actor:seat, headline:"ダブルダウン", sub:"相手に追加投入の余力がありません。",
+  if(need<=0) return show({actor:"any", headline:"ダブルダウン", sub:"相手に追加投入の余力がありません。",
     rows:[[{t:"次へ",solid:true,f:()=>nextHandIdx(seat)}]]});
   const refund = ()=>{ if(need<add){ const b=add-need; S.chips[seat]+=b; S.contrib[seat]-=b; S.pot-=b;
       logLine(`超過分 ${b} を ${tok(seat)} に返却。`); } };
@@ -640,7 +641,7 @@ function doDD(seat){
       if(cpuStrength()<0.26 && rnd()<0.6) return doFold("c");
       S.chips.c-=need; S.contrib.c+=need; S.pot+=need; refund();
       logLine(`{C} は応じました（+${need}）。`);
-      show({actor:"p", headline:"{C} が応じました", sub:`{C} が ${need} を追加投入しました。`,
+      show({actor:"any", headline:"{C} が応じました", sub:`{C} が ${need} を追加投入しました。`,
         rows:[[{t:"次へ",solid:true,f:()=>nextHandIdx(seat)}]]});
     }, 800);
   }
@@ -714,26 +715,23 @@ function showdown(){
 function endHand(headline, sub){
   S.phase="result"; S.revealAll=true;
   for(const seat of ["p","c"]) for(const h of S.hands[seat]) for(const c of h.cards) S.discard.push(c);
-  show({actor:"p", headline, sub, rows:[[{t:"次のハンドへ", solid:true, f:nextHand}]]});
+  show({actor:"any", headline, sub, rows:[[{t:"次のハンドへ", solid:true, f:nextHand}]]});
 }
 function nextHand(){ S.dealer=other(S.dealer); newHand(); }
 function gameOver(){
   S.phase="over"; S.revealAll=true; S.view=null;
   const head = s => S.chips[s]>S.chips[other(s)] ? "あなたの勝利" : "相手の勝利";
-  show({actor:"p", headline:{p:head("p"),c:head("c")},
+  show({actor:"any", headline:{p:head("p"),c:head("c")},
     sub:`最終チップ　{P} ${S.chips.p} ／ {C} ${S.chips.c}`,
-    rows:[[{t:"もう一度", solid:true, f:newGame}]]});
+    rows:[[{t:"もう一度", solid:true, f:()=>newGame(S.rng)}]]});
 }
 
 
 /* ============================================================
-   通信：ロックステップ方式
+   通信：中継サーバー（Cloudflare Workers）経由の WebSocket
    ------------------------------------------------------------
-   両端末が同じ種から同じ山札を作り、同じエンジンを動かす。
-   やり取りするのは「どのボタンを押したか」だけ。
-
-   部屋は「席1」「席2」の2つのIDを用意する。
-   席1が取れなければ席2を取るので、2人が同じIDを奪い合わない。
+   サーバーはメッセージを右から左へ流すだけ。判定もカードも持たない。
+   両端末が同じ種から同じ山札を作り、同じ順に処理する（ロックステップ）。
    ============================================================ */
 const WA=["azure","amber","brisk","clay","dusk","ember","frost","glass","ivory","jade","lunar","moss",
   "nova","onyx","pearl","quartz","rust","slate","tide","umber","violet","wren"];
@@ -741,14 +739,21 @@ const WB=["otter","falcon","bison","crane","dingo","eagle","ferret","gecko","her
   "lynx","marten","newt","owl","panda","quail","raven","seal","tapir","viper"];
 const pickOne=a=>a[Math.floor(Math.random()*a.length)];
 const makeWord=()=>`${pickOne(WA)}-${pickOne(WB)}-${10+Math.floor(Math.random()*90)}`;
+/* 合言葉に中継URLを添えて共有できる形にする（相手はURL入力が不要になる） */
+const b64=s=>{ try{ return btoa(unescape(encodeURIComponent(s))).replace(/=+$/,""); }catch(e){ return ""; } };
+const unb64=s=>{ try{ return decodeURIComponent(escape(atob(s))); }catch(e){ return ""; } };
+function shareText(){ return relayReady(RELAY) ? `${WORD}#${b64(RELAY)}` : WORD; }
+/* 「合言葉#xxxx」形式で貼られたら、URL部分を取り込む */
+function splitShared(raw){
+  const i=String(raw).indexOf("#");
+  if(i<0) return normWord(raw);
+  const url=unb64(String(raw).slice(i+1).trim());
+  if(relayReady(url)){ RELAY=url; store.set(RKEY,url); }
+  return normWord(String(raw).slice(0,i));
+}
 const normWord=w=>String(w||"").trim().toLowerCase()
   .replace(/[\s\u3000]+/g,"-").replace(/[^0-9a-z\u3040-\u30ff\u4e00-\u9fff-]/g,"");
-const roomBase=w=>"bjduel6-"+encodeURIComponent(normWord(w));
-const slotId=(w,n)=>roomBase(w)+"-s"+n;
 const rand32=()=>(Math.random()*0xFFFFFFFF)>>>0;
-
-let WORD="", SLOT=0, SEED=0, retryT=null, dialT=null, hbT=null, lastRx=0;
-let SEATED=false;   // 一度でも席を確保できたか（MYSEAT の初期値と区別するため）
 
 /* ---------- 保存 ---------- */
 const MEM={};
@@ -757,7 +762,22 @@ const store={
   set(k,v){ try{ localStorage.setItem(k,v); }catch(e){ MEM[k]=v; } },
   del(k){ try{ localStorage.removeItem(k); }catch(e){ delete MEM[k]; } }
 };
-const SKEY="bjd_lockstep_v2";
+const SKEY="bjd_ws_v1", RKEY="bjd_relay_url", CKEY="bjd_client_id";
+
+/* ─────────────────────────────────────────────
+   中継サーバーのURL。wrangler deploy で出た URL の
+   https を wss に変えて、ここに書くだけ。
+   ここを直せば、全員の端末に自動で行き渡る。
+   ───────────────────────────────────────────── */
+const DEFAULT_RELAY = "wss://bjduel-relay.bjduel-relay.workers.dev";
+
+const relayReady = u => /^wss?:\/\//.test(u) && !/YOUR-SUBDOMAIN/.test(u);
+let WORD="", SEED=0, CID=store.get(CKEY)||"";
+let RELAY = relayReady(DEFAULT_RELAY) ? DEFAULT_RELAY : (store.get(RKEY)||"");
+if(!CID){ CID = "c"+Date.now().toString(36)+Math.random().toString(36).slice(2,8); store.set(CKEY,CID); }
+
+let ws=null, retryT=null, hbT=null, lastRx=0, tries=0, SEATED=false;
+
 function saveSession(){
   if(!MODE) return;
   store.set(SKEY, JSON.stringify({mode:MODE, word:WORD, seat:MYSEAT, seed:SEED, history:HISTORY}));
@@ -773,7 +793,7 @@ function rebuild(seed, history){
     const f=S.pending[id]; S.pending={}; HISTORY.push(id); f();
   }
   REPLAY=false;
-  if(S.view) show(S.view);
+  if(S && S.view) show(S.view);
   saveSession();
 }
 
@@ -782,20 +802,12 @@ const lobbyMsg = t => { const n=$("lobbyNote"); if(n) n.textContent=t; };
 function banner(t){ const b=$("netBanner"); if(!b) return;
   if(t){ b.textContent=t; b.classList.add("on"); } else b.classList.remove("on"); }
 function netMsg(t){ lobbyMsg(t); banner(S ? t : ""); }
-function sendMsg(o){ try{ conn && conn.open && conn.send(o); }catch(e){} }
-function killPeer(){ try{ peer && peer.destroy(); }catch(e){} peer=null; conn=null; SLOT=0; }
-function leaveAll(){ clearTimeout(retryT); clearTimeout(dialT); clearInterval(hbT); hbT=null; SEATED=false; killPeer();
-  MODE=null; WORD=""; HISTORY=[]; S=null; banner(""); }
-function backoff(fn, msg){
-  if(MODE!=="online") return;
-  if(msg) netMsg(msg);
-  clearTimeout(retryT);
-  retryT=setTimeout(fn, 1200 + Math.random()*2000);   // ずらして同時衝突を避ける
-}
+function sendMsg(o){ try{ if(ws && ws.readyState===1) ws.send(JSON.stringify(o)); }catch(e){} }
 
-if(typeof Peer==="undefined"){
-  $("btnOnline").disabled=true;
-  $("netNote").textContent="オンライン対戦の読み込みに失敗しました。通信環境を確認してください。";
+function closeWS(){ try{ if(ws){ ws.onclose=null; ws.close(); } }catch(e){} ws=null; }
+function leaveAll(){
+  clearTimeout(retryT); clearInterval(hbT); hbT=null; closeWS();
+  MODE=null; WORD=""; HISTORY=[]; S=null; SEATED=false; tries=0; banner("");
 }
 
 /* ---------- CPU戦 ---------- */
@@ -809,119 +821,120 @@ $("btnCpu").onclick=()=>{
 $("btnOnline").onclick=()=>{
   leaveAll(); clearSession();
   MODE="online"; showScreen("scLobby");
-  $("lobbyBody").innerHTML=`<p class="note" style="margin-bottom:12px">合言葉を決めて、相手にも同じものを入力してもらってください</p>
+  drawLobbyForm();
+};
+
+function drawLobbyForm(){
+  const needUrl = !relayReady(RELAY);
+  $("lobbyBody").innerHTML=`
+    <p class="note" style="margin-bottom:10px">合言葉を決めて、相手にも同じものを伝えてください</p>
     <input class="field" id="wordIn" autocapitalize="off" autocorrect="off" spellcheck="false">
-    <p class="note" style="margin-top:12px">先に入った方が席1、後から来た方が席2に入ります。
-    どちらが部屋を作るかを決める必要はありません。</p>`;
+    ${needUrl ? `<p class="note" style="margin:18px 0 8px">中継サーバーが未設定です。<br>
+      relay/README.md の手順でデプロイし、URLを貼ってください。</p>
+      <input class="field" id="relayIn" style="font-size:13px" placeholder="wss://xxxx.workers.dev"
+        autocapitalize="off" autocorrect="off" spellcheck="false">` : ``}`;
   $("wordIn").value = makeWord();
+  if(needUrl && $("relayIn")) $("relayIn").value = store.get(RKEY)||"";
   $("lobbyActions").innerHTML="";
   const row=document.createElement("div"); row.className="row";
   const go=document.createElement("button"); go.className="act solid wide"; go.textContent="この合言葉で対戦する";
   row.appendChild(go); $("lobbyActions").appendChild(row);
   lobbyMsg("\u00a0"); backBtn();
   go.onclick=()=>{
-    const w=normWord($("wordIn").value);
+    const w=splitShared($("wordIn").value);
     if(!w) return lobbyMsg("合言葉を入力してください。");
+    if(!relayReady(RELAY)){
+      let r=($("relayIn")?$("relayIn").value:"").trim()
+        .replace(/^http:/,"ws:").replace(/^https:/,"wss:").replace(/\/+$/,"");
+      if(!relayReady(r)) return lobbyMsg("中継サーバーのURLを入力してください（wss:// で始まるもの）。");
+      RELAY=r; store.set(RKEY,RELAY);
+    }
     WORD=w; go.disabled=true;
     $("lobbyBody").innerHTML=`<p class="note" style="margin-bottom:14px">合言葉</p><div class="word">${WORD}</div>`;
-    $("lobbyActions").innerHTML=""; backBtn();
-    claimSlot(1);
+    $("lobbyActions").innerHTML="";
+    const cr=document.createElement("div"); cr.className="row";
+    const cb=document.createElement("button"); cb.className="act sm"; cb.textContent="合言葉をコピー";
+    cb.onclick=()=>{
+      const t=shareText();
+      const done=()=>{ cb.textContent="コピーしました"; setTimeout(()=>cb.textContent="合言葉をコピー",1600); };
+      if(navigator.clipboard) navigator.clipboard.writeText(t).then(done).catch(()=>prompt("これを相手に送ってください", t));
+      else prompt("これを相手に送ってください", t);
+    };
+    cr.appendChild(cb); $("lobbyActions").appendChild(cr);
+    backBtn();
+    connect();
   };
-};
+}
 
 /* ============================================================
-   席の確保（席1を試し、埋まっていたら席2）
+   接続
    ============================================================ */
-function claimSlot(n){
-  if(MODE!=="online") return;
-  killPeer();
-  netMsg(`席${n}を確保しています…`);
-  peer=new Peer(slotId(WORD,n));
-  peer.on("open",()=>{
-    SLOT=n; SEATED=true;
-    if(!S && !HISTORY.length){
-      MYSEAT = (n===1) ? "p" : "c";
-      if(n===1){ SEED=rand32(); newGame(SEED); }
-    }
-    saveSession();
+function connect(){
+  if(MODE!=="online" || !RELAY || !WORD) return;
+  closeWS();
+  netMsg(tries ? "接続しています…" : "中継サーバーに接続しています…");
+  let sock;
+  try{ sock=new WebSocket(RELAY+"?room="+encodeURIComponent("bjd-"+WORD)); }
+  catch(e){ return retryLater("接続できません。URLを確認してください。"); }
+  ws=sock;
+  sock.onopen=()=>{
+    tries=0; lastRx=Date.now();
+    sendMsg({type:"join", cid:CID});
     startHeartbeat();
-    if(n===2){ netMsg("相手に接続しています…"); dial(); }
-    else netMsg("相手の参加を待っています…");   // 席1は待つだけ。両側から呼ぶと接続が二重になる
-  });
-  peer.on("connection", c=>{
-    if(conn && conn.open && conn!==c){ try{ conn.close(); }catch(e){} }
-    attach(c);
-  });
-  peer.on("disconnected", ()=>{ try{ peer.reconnect(); }catch(e){} });
-  peer.on("error", e=>{
-    if(e.type==="unavailable-id"){
-      if(SEATED){    // 自分の席は決まっている。相手の席は取らず、解放を待つ
-        return backoff(()=>claimSlot(MYSEAT==="p"?1:2), "自分の席の解放を待っています…");
-      }
-      if(n===1) return claimSlot(2);                        // 席1が埋まっている → 席2へ
-      return backoff(()=>claimSlot(1), "空き待ち。自動で入り直します…");
-    }
-    if(e.type==="peer-unavailable"){                        // 相手がまだ来ていない
-      if(SLOT===2) return backoff(dial, "相手を探しています…");
-      return netMsg("相手の参加を待っています…");
-    }
-    backoff(()=>claimSlot(n), "接続エラー："+e.type);
-  });
+  };
+  sock.onmessage=ev=>{
+    lastRx=Date.now();
+    let d; try{ d=JSON.parse(ev.data); }catch(e){ return; }
+    onMsg(d);
+  };
+  sock.onclose=()=>{ if(ws===sock){ ws=null; retryLater("接続が切れました。つなぎ直しています…"); } };
+  sock.onerror=()=>{};
 }
 
-/* ---------- 相手の席へ呼び出す ---------- */
-function dial(){
-  if(MODE!=="online" || !peer || peer.destroyed || SLOT!==2) return;
-  if(conn && conn.open) return;
-  let c;
-  try{ c=peer.connect(slotId(WORD, SLOT===1?2:1), {reliable:true}); }
-  catch(e){ return backoff(dial, "相手を待っています…"); }
-  let ok=false;
-  c.on("open", ()=>{ ok=true; attach(c); });
-  c.on("error", ()=>{ if(!ok) backoff(dial, "相手を待っています…"); });
-  clearTimeout(dialT);
-  dialT=setTimeout(()=>{ if(!ok && (!conn || !conn.open)) backoff(dial, "相手を待っています…"); }, 6000);
+function retryLater(msg){
+  if(MODE!=="online") return;
+  netMsg(msg);
+  clearTimeout(retryT);
+  const wait = Math.min(1000*Math.pow(1.6, tries++), 8000) + Math.random()*600;
+  retryT=setTimeout(connect, wait);
 }
 
-/* ---------- 接続後 ---------- */
-function attach(c){
-  conn=c;
-  const hello=()=>{ banner(""); lobbyMsg("接続しました。");
-    sendMsg({type:"hello", seat:MYSEAT, seed:SEED, n:HISTORY.length}); };
-  if(c.open) hello(); else c.on("open", hello);
-  c.on("data", d=>{ if(d) onMsg(d); });
-  c.on("close", ()=>{
-    conn=null;
-    // ここで peer を壊さない。壊すと自分の席を手放してしまう
-    if(MODE!=="online") return;
-    if(SLOT===2) backoff(dial, "再接続しています…");
-    else netMsg("相手が離席中です。再接続を待っています…");
-  });
-  c.on("error", ()=>{ if(MODE==="online" && SLOT===2) backoff(dial, "再接続しています…"); });
-}
-
-/* 1.5秒ごとに互いの進捗を突き合わせ、取りこぼした行動を自動で補う */
+/* 1.5秒ごとに進捗を突き合わせ、取りこぼした行動を自動で補う */
 function startHeartbeat(){
   clearInterval(hbT); lastRx=Date.now();
   hbT=setInterval(()=>{
     if(MODE!=="online") return;
-    if(!peer || peer.destroyed) return claimSlot(MYSEAT==="p"?1:2);
-    if(conn && conn.open){
-      sendMsg({type:"ping", n:HISTORY.length, seed:SEED});
-      if(Date.now()-lastRx > 9000){          // 応答が途絶えた接続は捨てる
-        try{ conn.close(); }catch(e){}
-        conn=null; lastRx=Date.now();
-        netMsg("応答がありません。つなぎ直しています…");
-        if(SLOT===2) dial();
-      }
-    } else if(SLOT===2) dial();
+    if(!ws || ws.readyState!==1){ if(!retryT) retryLater("つなぎ直しています…"); return; }
+    sendMsg({type:"ping", n:HISTORY.length, seed:SEED, seat:MYSEAT});
+    if(Date.now()-lastRx > 12000){ closeWS(); retryLater("応答がありません。つなぎ直しています…"); }
   }, 1500);
 }
 
+/* ============================================================
+   メッセージ
+   ============================================================ */
 function onMsg(d){
-  lastRx=Date.now();
+  if(d.type==="seat"){
+    banner("");
+    if(!SEATED && !HISTORY.length && !S){
+      MYSEAT=d.seat; SEATED=true;
+      if(MYSEAT==="p"){ SEED=rand32(); newGame(SEED); }
+    } else SEATED=true;
+    saveSession();
+    lobbyMsg(d.others>0 ? "接続しました。" : "相手の参加を待っています…");
+    if(S) banner(d.others>0 ? "" : "相手の参加を待っています…");
+    if(d.others>0) sendMsg({type:"hello", seat:MYSEAT, seed:SEED, n:HISTORY.length});
+    return;
+  }
+  if(d.type==="full"){ netMsg("この合言葉の部屋は満席です。別の合言葉を使ってください。"); return; }
+  if(d.type==="peer-joined"){
+    banner(""); lobbyMsg("接続しました。");
+    sendMsg({type:"hello", seat:MYSEAT, seed:SEED, n:HISTORY.length});
+    return;
+  }
+  if(d.type==="peer-left"){ if(S) banner("相手が離席中です。再接続を待っています…"); return; }
+
   if(d.type==="ping"){
-    if(d.seed!==SEED && HISTORY.length===0 && MYSEAT==="c"){ SEED=d.seed; sendMsg({type:"need", n:0}); return; }
     if(d.n < HISTORY.length) sendMsg({type:"tail", from:d.n, ids:HISTORY.slice(d.n), seed:SEED});
     else if(d.n > HISTORY.length) sendMsg({type:"need", n:HISTORY.length});
     return;
@@ -934,21 +947,18 @@ function onMsg(d){
   }
   if(d.type==="hello"){
     banner("");
-    if(!HISTORY.length && !S){                 // まっさら → 相手に合わせる
+    if(!HISTORY.length && !S){
       MYSEAT=other(d.seat); SEED=d.seed;
-      if(d.n>0) sendMsg({type:"need"}); else { newGame(SEED); saveSession(); }
-      return;
+      if(d.n>0) sendMsg({type:"need", n:0}); else newGame(SEED);
+      saveSession(); return;
     }
-    if(d.seat===MYSEAT){                       // 席の衝突 → 記録の多い方が残る
-      if(HISTORY.length < d.n || (HISTORY.length===d.n && SLOT===2)) MYSEAT=other(MYSEAT);
-    }
+    if(d.seat===MYSEAT && HISTORY.length < d.n) MYSEAT=other(MYSEAT);
     if(d.n > HISTORY.length || (d.n===HISTORY.length && SEED!==d.seed && MYSEAT==="c")){
-      SEED=d.seed; sendMsg({type:"need"});
-    } else if(d.n < HISTORY.length || (SEED!==d.seed && MYSEAT==="p")){
-      sendMsg({type:"sync", seed:SEED, history:HISTORY, seat:other(MYSEAT)});
+      SEED=d.seed; sendMsg({type:"need", n:0});
+    } else if(d.n < HISTORY.length){
+      sendMsg({type:"tail", from:d.n, ids:HISTORY.slice(d.n), seed:SEED});
     }
-    saveSession();
-    return;
+    saveSession(); return;
   }
   if(d.type==="need"){
     if(!d.n) sendMsg({type:"sync", seed:SEED, history:HISTORY, seat:other(MYSEAT)});
@@ -957,9 +967,7 @@ function onMsg(d){
   }
   if(d.type==="sync"){
     MYSEAT=d.seat; SEED=d.seed;
-    rebuild(SEED, d.history);
-    banner("");
-    return;
+    rebuild(SEED, d.history); banner(""); return;
   }
   if(d.type==="act"){
     if(d.n === HISTORY.length+1) applyAction(d.id, true);
@@ -973,21 +981,14 @@ function resume(){
   if(document.visibilityState!=="visible") return;
   if(MODE!=="online") return;
   startHeartbeat();
-  if(conn && conn.open){ sendMsg({type:"ping", n:HISTORY.length, seed:SEED}); return; }
-  if(!peer || peer.destroyed) return claimSlot(MYSEAT==="p"?1:2);   // 席は自分の立場で決める
-  if(peer.disconnected){ try{ peer.reconnect(); }catch(e){} }
-  if(SLOT===2) backoff(dial, "再接続しています…");
-  else netMsg("相手の再接続を待っています…");
+  if(ws && ws.readyState===1){ sendMsg({type:"ping", n:HISTORY.length, seed:SEED, seat:MYSEAT}); return; }
+  clearTimeout(retryT); retryT=null; tries=0;
+  banner("再接続しています…"); connect();
 }
 document.addEventListener("visibilitychange", resume);
 window.addEventListener("pageshow", resume);
 window.addEventListener("focus", resume);
 window.addEventListener("online", resume);
-/* pagehide はアプリ切り替えでも発火する。ここで peer を壊すと自分の席を手放してしまうので何もしない。
-   本当にページが閉じられる時だけ、席を解放する。 */
-window.addEventListener("pagehide", e=>{ if(!e.persisted && document.visibilityState==="hidden" && CLOSING) killPeer(); });
-let CLOSING=false;
-window.addEventListener("beforeunload", ()=>{ CLOSING=true; });
 
 function backBtn(){
   const row=document.createElement("div"); row.className="row";
@@ -1007,7 +1008,7 @@ function refreshResume(){
   b.onclick=()=>{
     MODE=d.mode; WORD=d.word||""; MYSEAT=d.seat||"p"; SEED=d.seed||1; SEATED=(d.mode==="online");
     rebuild(SEED, d.history||[]);
-    if(MODE==="online"){ banner("再接続しています…"); claimSlot(MYSEAT==="p"?1:2); }
+    if(MODE==="online"){ banner("再接続しています…"); connect(); }
   };
   row.appendChild(b); box.appendChild(row);
   const row2=document.createElement("div"); row2.className="row";
