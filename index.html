@@ -69,6 +69,11 @@
   button.act.sm{font-size:14px;padding:9px 14px;min-width:68px;}
   button.act.wide{width:100%;}
   button.act:focus-visible{outline:3px solid #111;outline-offset:2px;}
+  .topbar{display:flex;align-items:center;justify-content:space-between;padding:10px 0 2px;}
+  .back{background:none;border:none;font:inherit;color:var(--line);font-size:16px;
+    padding:8px 10px 8px 0;cursor:pointer;display:flex;align-items:center;gap:6px;}
+  .back .arw{font-size:22px;line-height:1;}
+  .back:active{opacity:.5;}
   .banner{display:none;font-size:12px;font-weight:600;text-align:center;padding:8px;
     border:2px solid var(--line);border-radius:10px;margin:0 0 6px;}
   .banner.on{display:block;}
@@ -79,7 +84,9 @@
     padding:calc(20px + env(safe-area-inset-top)) 20px calc(28px + env(safe-area-inset-bottom));}
   .sheet.open{display:block;}
   .sheet-inner{max-width:520px;margin:0 auto;}
-  .sheet h1{font-size:22px;margin:0 0 4px;} .sheet h2{font-size:17px;margin:22px 0 8px;}
+  .sheet h1{font-size:22px;margin:0 0 4px;} .sheet h2{font-size:17px;margin:24px 0 8px;}
+  .sheet h3{font-size:15px;margin:16px 0 6px;}
+  .sheet ol{padding-left:20px;margin:6px 0;} .sheet ol li{margin:4px 0;}
   .sheet p,.sheet li{font-size:14px;line-height:1.75;}
   .sheet ul{padding-left:18px;margin:6px 0;}
   .sheet table{width:100%;border-collapse:collapse;font-size:13px;margin:8px 0;}
@@ -105,13 +112,16 @@
   <p class="note" id="netNote">&nbsp;</p>
 </div></div>
 
-<div class="screen" id="scLobby"><div class="centered">
+<div class="screen" id="scLobby">
+  <div class="topbar"><button class="back" id="lobbyBack"><span class="arw">&#8249;</span>タイトル</button></div>
+  <div class="centered">
   <div id="lobbyBody"></div>
   <div class="actions" id="lobbyActions"></div>
   <p class="note" id="lobbyNote">&nbsp;</p>
 </div></div>
 
 <div class="screen" id="scGame">
+  <div class="topbar"><button class="back" id="gameBack"><span class="arw">&#8249;</span>タイトル</button></div>
   <div class="banner" id="netBanner"></div>
   <header>
     <div class="stack">
@@ -139,6 +149,7 @@
 </div>
 
 <div class="sheet" id="countSheet"><div class="sheet-inner">
+  <div class="topbar"><button class="back" id="countBack"><span class="arw">&#8249;</span>もどる</button></div>
   <h1>残りカード</h1>
   <p class="note" style="text-align:left" id="countNote"></p>
   <div class="cgrid" id="cgrid"></div>
@@ -149,87 +160,128 @@
 </div></div>
 
 <div class="sheet" id="sheet"><div class="sheet-inner">
+  <div class="topbar"><button class="back" id="sheetBack"><span class="arw">&#8249;</span>もどる</button></div>
   <h1>ブラックジャック・デュエル</h1>
-  <p style="color:#8b8b8b">ルールブック v5.1</p>
+  <p style="color:#8b8b8b">遊びかた / RULES v5.1</p>
 
-  <h2>芯</h2>
-  <p>未知の情報は互いの伏せ札1枚だけ。<b>バーストは公開されない。</b>相手が何枚めくって止まったかを見て、伏せ札1枚の分布からバースト確率を計算する。相手が既にバーストしていれば、自分がバーストしても両者バーストでディーラーが勝つ。だから押せる。この見積もりが勝敗を分ける。</p>
+  <h2>1. どういうゲーム？</h2>
+  <p>手札の合計を <b>21 に近づける</b>ゲームです。ただし <b>22 以上になったら、その時点で負け</b>。これを「バースト」と呼びます。</p>
+  <p>2人で対戦し、より 21 に近い方が勝ち。勝った方が賭けられたチップ（ポット）を全部もらいます。</p>
 
-  <h2>基本</h2>
+  <h2>2. カードの数え方</h2>
+  <table>
+    <tr><th>カード</th><th>数え方</th></tr>
+    <tr><td>2 〜 10</td><td>書いてある数のまま</td></tr>
+    <tr><td>J・Q・K</td><td>すべて <b>10</b></td></tr>
+    <tr><td>A（エース）</td><td><b>1 でも 11 でも、都合のいい方</b></td></tr>
+  </table>
+  <p>エースが柔軟なのがポイントです。たとえば <b>A + 9</b> は「20」として扱えます。ここに 8 を引くと 28 でバースト…に見えますが、エースを 1 に数え直せば <b>18</b> になり、まだ生きています。</p>
+  <p class="note" style="text-align:left">画面の合計欄は、いつも<b>自動で一番いい数え方</b>になっています。</p>
+
+  <h2>3. 用語</h2>
+  <table>
+    <tr><th>言葉</th><th>意味</th></tr>
+    <tr><td><b>ヒット</b></td><td>カードを1枚引く</td></tr>
+    <tr><td><b>スタンド</b></td><td>もう引かずに確定する</td></tr>
+    <tr><td><b>バースト</b></td><td>22以上になること。負け</td></tr>
+    <tr><td><b>ナチュラル</b></td><td>最初の2枚がちょうど21（A＋10札）。最強の手</td></tr>
+    <tr><td><b>ディーラー</b></td><td>後攻の席。<b>毎ハンド交代</b>します</td></tr>
+    <tr><td><b>ノンディーラー</b></td><td>先攻の席</td></tr>
+    <tr><td><b>ポット</b></td><td>場に積まれたチップ。勝った方が総取り</td></tr>
+    <tr><td><b>アンティ</b></td><td>参加費。毎ハンド自動で払われる</td></tr>
+  </table>
+
+  <h2>4. 1回の流れ</h2>
+  <p>1回の勝負を「ハンド」と呼びます。順番はこうです。</p>
+  <ol>
+    <li><b>配札</b> … 2枚ずつ配られます。<b>1枚は表向き（相手にも見える）</b>、<b>1枚は裏向き（自分だけ見える）</b></li>
+    <li><b>ベットラウンド</b> … 賭けるかどうかを決めます（1回だけ）</li>
+    <li><b>サレンダー判断</b> … 勝てそうになければ、半額だけ払って降りられます</li>
+    <li><b>ドロー</b> … カードを引くか止めるかを決めます。先攻→後攻の順</li>
+    <li><b>ショーダウン</b> … 裏向きのカードを公開して、勝敗を決めます</li>
+  </ol>
+
+  <h2>5. ここが普通のブラックジャックと違う</h2>
+  <p>カジノのブラックジャックは「客 vs 店」ですが、これは<b>人 vs 人</b>です。そこから来る違いが4つあります。</p>
+
+  <h3>① 両方がカードを引く</h3>
+  <p>店側は「17で必ず止まる」という決まりで動きますが、このゲームの相手は<b>人間なので、どこで止まるか分かりません</b>。そこを読むのがこのゲームの中心です。</p>
+
+  <h3>② 引いたカードは相手にも見える</h3>
+  <p>ドローで引いたカードは、数字まで両方に公開されます。<b>隠されているのは、最初に配られた裏向きの1枚だけ</b>です。</p>
+
+  <h3>③ バーストしても相手には分からない</h3>
+  <p>22を超えても、それは相手に伝わりません。外から見ると「止まった」ようにしか見えない。</p>
+  <p>ここが効いてきます。相手が何枚も引いた末に止まったなら、<b>バーストしている可能性が高い</b>。その場合、自分も無理に引いてバーストしても、<b>両方バーストならディーラー（後攻）の勝ち</b>になります。つまり後攻は「相手はもう死んでいるかもしれない」に賭けて、強気に引けるわけです。</p>
+
+  <h3>④ 引き分けは先攻の勝ち</h3>
+  <p>同点なら<b>ノンディーラー（先攻）の勝ち</b>。だから後攻は「同じ」では足りず、<b>必ず上回る</b>必要があります。</p>
+
+  <h2>6. 勝敗の決まりかた</h2>
+  <p>上から順に見ていきます。</p>
+  <ol>
+    <li>22以上（バースト）した方が負け</li>
+    <li><b>ナチュラル</b>（2枚で21）は、3枚以上で作った21に勝つ</li>
+    <li>より21に近い方が勝ち</li>
+    <li><b>引き分け → ノンディーラー（先攻）の勝ち</b></li>
+    <li><b>両方バースト → ディーラー（後攻）の勝ち</b></li>
+  </ol>
+
+  <h2>7. 自動スタンド</h2>
+  <p>「これ以上引いたら100%バーストする」状態になると、自動的に止まります。悩む余地がないので省略しているだけです。</p>
+  <p class="note" style="text-align:left">エースは1として数えて判定します。公開札が A＋10 なら、エースを1と見て「11」なので、まだ引けます。</p>
+
+  <h2>8. 特別な手</h2>
+
+  <h3>ダブルダウン</h3>
+  <p>賭け金を倍にする代わりに、<b>カードを1枚だけ引いて強制的に止まる</b>手です。最初の2枚のときだけ宣言できます。</p>
+  <p>宣言されると相手は「<b>同額を払って残る</b>」か「<b>降りる</b>」の二択を迫られます。</p>
+  <p>さらに、宣言した側は勝敗の裁定を上書きできます。</p>
+  <table><tr><th></th><th>引き分け</th><th>両方バースト</th></tr>
+    <tr><td>誰もしない</td><td>先攻</td><td>後攻</td></tr>
+    <tr><td>先攻だけDD</td><td>先攻</td><td><b>先攻</b></td></tr>
+    <tr><td>後攻だけDD</td><td><b>後攻</b></td><td>後攻</td></tr>
+    <tr><td>両方DD</td><td>先攻</td><td>後攻</td></tr></table>
+
+  <h3>スプリット</h3>
+  <p>最初の2枚が<b>同じ数字</b>のとき、手札を2つに分けて<b>2回勝負</b>できます。賭け金とポットは半分ずつに分かれます。</p>
   <ul>
-    <li>2人対戦。1ハンドごとにディーラーが交代する。</li>
-    <li>アンティは<b>ディーラー 9 / ノンディーラー 10</b>。</li>
-    <li>行動順は常にノンディーラーが先行。</li>
-    <li><b>2デッキを継続使用</b>。残り30枚を切ったらシャッフル。</li>
+    <li>裏向きのカードが<b>公開</b>されます（情報を渡す代償）</li>
+    <li>分けた各手札に、1枚ずつ自動で配られます。<b>1つ目は裏向き、2つ目は表向き</b></li>
+    <li>1勝1敗なら損失は半分で済む＝リスクを抑える手です</li>
+    <li>各手札にヒットはできますが、ダブルダウンはできません</li>
   </ul>
 
-  <h2>勝敗の基本形</h2>
-  <table><tr><th>状況</th><th>裁定</th></tr>
-    <tr><td>引き分け</td><td>ノンディーラーの勝ち</td></tr>
-    <tr><td>両者バースト</td><td>ディーラーの勝ち</td></tr></table>
+  <h3>サレンダー</h3>
+  <p><b>まだ1枚も引いていないとき限定</b>で、<b>賭けた額の半分だけ払って降りられます</b>。分の悪い手を早めに切るための逃げ道です。</p>
+  <p class="note" style="text-align:left">「フォールド」は全額を捨てて降りること。相手のレイズが大きいときはフォールド、小さいときはサレンダーの方が得です。</p>
 
-  <h2>進行</h2>
-  <p>アンティ → 配札 → ベットラウンド（1回） → サレンダー判断 → ドローフェーズ → ショーダウン</p>
+  <h2>9. 賭けの部分</h2>
+  <p>ベットラウンドでできることは4つです。</p>
+  <table>
+    <tr><td><b>チェック</b></td><td>賭けずに次へ進む</td></tr>
+    <tr><td><b>コール</b></td><td>相手が上乗せした分に合わせる</td></tr>
+    <tr><td><b>レイズ</b></td><td>賭け金を上乗せする</td></tr>
+    <tr><td><b>フォールド</b></td><td>降りる（払った分は戻らない）</td></tr>
+  </table>
+  <p><b>オールイン</b>は手持ち全部を賭けること。相手が払いきれない分は返ってきます。</p>
+  <p>アンティは<b>後攻 9 / 先攻 10</b>。先攻の方がわずかに有利なので、その分だけ多く払う仕組みです。</p>
+
+  <h2>10. カードを数える</h2>
+  <p>山札は<b>2デッキ（104枚）を使い切るまで continuous に使います</b>。途中でシャッフルしません。</p>
+  <p>つまり<b>どのカードがもう出たかを覚えておくと有利</b>です。画面上部の「残り」を押すと、まだ出ていないカードの枚数が見られます。これは正規の技術で、隠す設計にはしていません。</p>
+
+  <h2>11. 実測で分かった強い打ち方</h2>
+  <p>シミュレーションで確かめた結果です。参考まで。</p>
   <ul>
-    <li>配札は表1枚・伏せ1枚。<b>伏せ札は本人が最初から確認できる。</b></li>
-    <li>ドローで引いたカードは<b>数値まで全公開</b>。</li>
-    <li><b>ドロー開始後は賭け金を動かせない</b>（DDのみ例外）。</li>
+    <li><b>16で止まる</b>のが最善（カジノの店側は17で止まりますが、それより1低い）</li>
+    <li><b>ダブルダウンは合計10か11のときだけ。</b>12以上でやると大損します</li>
+    <li><b>サレンダーは「16 vs 相手の10かA」だけ。</b>使いすぎると損です</li>
+    <li><b>スプリットは 8・8 のときだけ。</b>全部のペアで分けると損です</li>
   </ul>
 
-  <h2>バーストは公開しない</h2>
-  <ul>
-    <li>22以上になっても公開せず、ハンドはそのまま進行する。</li>
-    <li>外形上は「スタンドした」ようにしか見えない。</li>
-    <li><b>バーストした後もヒットできる</b>（強制スタンドにはならない）。</li>
-  </ul>
-
-  <h2>自動スタンド</h2>
-  <p>これ以上引けば必ずバーストする状態に達した時点で、自動的にスタンドとなる。</p>
-  <ul>
-    <li>未知のカードを1枚抱えている場合 → <b>公開札の合計が20以上</b></li>
-    <li>未知のカードがない場合（スプリット第2ハンド）→ <b>合計が21</b></li>
-    <li><b>いずれも、エースは1として数える。</b>エースは1にも11にもできるため、「必ずバーストする」かどうかは最小値で判定する。</li>
-  </ul>
-
-  <h2>サレンダー</h2>
-  <p>ベットラウンド後、<b>1枚も引く前に限り</b>宣言できる。拠出額の半分を放棄して降りる。</p>
-  <p class="note" style="text-align:left">コール額が自分の拠出額を上回るならフォールド、下回るならサレンダーが有利。</p>
-
-  <h2>勝敗判定</h2>
-  <ul>
-    <li>合計22以上は敗北。</li>
-    <li>ナチュラル（2枚で21）は3枚以上の21に勝つ。3:2配当は使用しない。</li>
-    <li><b>スプリット後の2枚21もナチュラル扱い。</b></li>
-  </ul>
-
-  <h2>ダブルダウン</h2>
-  <ul>
-    <li><b>初期2枚の状態でのみ宣言できる</b>（1枚でも引いた後は不可）。</li>
-    <li>総拠出額と同額を追加投入し、1枚引いて強制スタンド。</li>
-    <li>相手は「応じる」か「フォールド」の二択。応じてもDD扱いにはならない。</li>
-  </ul>
-  <table><tr><th></th><th>引き分け</th><th>両者バースト</th></tr>
-    <tr><td>誰もDDしない</td><td>ノンディーラー</td><td>ディーラー</td></tr>
-    <tr><td>ノンディーラーのみDD</td><td>ノンディーラー</td><td><b>ノンディーラー</b></td></tr>
-    <tr><td>ディーラーのみDD</td><td><b>ディーラー</b></td><td>ディーラー</td></tr>
-    <tr><td>両者DD</td><td>ノンディーラー</td><td>ディーラー</td></tr></table>
-
-  <h2>スプリット</h2>
-  <ul>
-    <li>同数字2枚のとき、ドローフェーズ冒頭で宣言できる。</li>
-    <li>伏せ札を公開し、2つに分割。<b>各手札に1枚ずつ自動配札</b>する。</li>
-    <li><b>第1ハンドは伏せて配る</b>（本人のみ確認可）。<b>第2ハンドは公開して配る。</b></li>
-    <li>掛け金・ポットは等分。ヒット可、ダブルダウン不可。</li>
-    <li>片方の勝負だけを降りることはできない。</li>
-  </ul>
-
-  <h2>実測された最善戦略</h2>
-  <ul>
-    <li><b>スタンド閾値は 16</b>（本家の17より1低い）</li>
-    <li><b>DDは 10・11 のみ</b>。12以上でのDDは大損</li>
-    <li><b>サレンダーは 16 vs 10・A のみ</b></li>
-    <li><b>スプリットは 8・8 中心</b>。全ペア分割は損</li>
-  </ul>
+  <h2>12. ゲームの終わり</h2>
+  <p>チップは各200から。<b>どちらかが0になったら終了</b>です。
 
   <div style="height:20px"></div>
   <button class="act solid wide" id="closeSheet">閉じる</button>
@@ -243,6 +295,8 @@ function showScreen(id){ ["scTitle","scLobby","scGame"].forEach(s=>$(s).classLis
 $("rulesBtn").onclick = $("btnRulesTitle").onclick = ()=>$("sheet").classList.add("open");
 $("closeSheet").onclick = ()=>$("sheet").classList.remove("open");
 $("closeCount").onclick = ()=>$("countSheet").classList.remove("open");
+$("sheetBack").onclick = ()=>$("sheet").classList.remove("open");
+$("countBack").onclick = ()=>$("countSheet").classList.remove("open");
 
 let MODE=null, conn=null, peer=null, LASTPL=null;
 let MYSEAT="p";              // 部屋を作った側が "p"、入った側が "c"
@@ -1016,6 +1070,18 @@ function refreshResume(){
   b2.onclick=()=>{ clearSession(); refreshResume(); };
   row2.appendChild(b2); box.appendChild(row2);
 }
+
+/* ---------- 戻る ---------- */
+function toTitle(ask){
+  if(ask && S && MODE && typeof confirm==="function"
+     && !confirm("対戦を中断してタイトルに戻りますか？\n（「つづきから」で再開できます）")) return;
+  saveSession();
+  clearTimeout(retryT); clearInterval(hbT); hbT=null; closeWS();
+  MODE=null; banner("");
+  showScreen("scTitle"); refreshResume();
+}
+$("gameBack").onclick=()=>toTitle(true);
+$("lobbyBack").onclick=()=>toTitle(false);
 refreshResume();
 
 </script>
