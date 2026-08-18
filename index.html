@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
 <title>ブラックジャック・デュエル</title>
 <style>
-  :root{ --line:#111; --grey:#9a9a9a; --dim:#8b8b8b; --cw:74px; --ch:106px; }
+  :root{ --line:#111; --grey:#9a9a9a; --dim:#8b8b8b; --cw:68px; --ch:96px; --ov:22px; }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
   html,body{margin:0;padding:0;height:100%;}
   body{background:#fff;color:var(--line);
@@ -15,61 +15,18 @@
     padding:env(safe-area-inset-top) 16px calc(12px + env(safe-area-inset-bottom));}
   .screen.on{display:flex;}
 
+  /* ---- タイトル / ロビー ---- */
   .centered{flex:1;display:flex;flex-direction:column;justify-content:center;gap:26px;padding:24px 4px;}
   .brand h1{font-size:30px;margin:0 0 6px;letter-spacing:-.02em;line-height:1.25;}
   .brand p{font-size:13px;color:var(--dim);margin:0;letter-spacing:.06em;}
-  .word{font-size:32px;font-weight:700;text-align:center;border:3px solid var(--line);
+  .word{font-size:30px;font-weight:700;text-align:center;border:3px solid var(--line);
     border-radius:16px;padding:20px 12px;word-break:break-all;}
-  .field{width:100%;font:inherit;font-size:22px;font-weight:600;text-align:center;
-    border:3px solid var(--line);border-radius:16px;padding:18px 12px;background:#fff;color:var(--line);}
+  .field{width:100%;font:inherit;font-size:20px;font-weight:600;text-align:center;
+    border:3px solid var(--line);border-radius:16px;padding:16px 12px;background:#fff;color:var(--line);}
   .note{font-size:13px;color:var(--dim);line-height:1.7;text-align:center;}
 
-  header{display:flex;align-items:center;justify-content:space-between;padding:12px 2px 8px;font-size:15px;}
-  .stack{display:flex;gap:13px;align-items:baseline;}
-  .stack b{font-size:18px;font-weight:700;}
-  .stack span{font-size:11px;color:var(--dim);}
-  .icon-btn{background:none;border:none;font:inherit;color:var(--line);font-size:13px;padding:6px 3px;cursor:pointer;text-decoration:underline;}
-  .seat{padding:4px 0;min-height:138px;display:flex;flex-direction:column;justify-content:center;}
-  .seat-label{font-size:11px;letter-spacing:.14em;color:var(--dim);text-align:center;margin-bottom:7px;}
-  .badge{display:inline-block;border:1px solid var(--line);border-radius:99px;
-    padding:1px 8px;font-size:10px;letter-spacing:.08em;margin-left:6px;color:var(--line);}
-  .hands{display:flex;flex-direction:column;align-items:center;gap:9px;}
-  .handrow{display:flex;align-items:center;justify-content:center;gap:11px;width:100%;}
-  .handrow.inactive{opacity:.4;}
-  .cards{display:flex;padding-left:24px;}
-  .total{font-size:24px;font-weight:600;min-width:52px;text-align:left;}
-  .total.small{font-size:17px;}
-  .total.unknown{color:var(--dim);}
-  .card{width:var(--cw);height:var(--ch);flex:0 0 auto;border:2.5px solid var(--line);
-    border-radius:11px;background:#fff;margin-left:-24px;display:flex;flex-direction:column;
-    justify-content:space-between;padding:4px 5px;line-height:1;
-    position:relative;}
-  .cards .card:nth-child(1){z-index:1;} .cards .card:nth-child(2){z-index:2;}
-  .cards .card:nth-child(3){z-index:3;} .cards .card:nth-child(4){z-index:4;}
-  .cards .card:nth-child(5){z-index:5;} .cards .card:nth-child(6){z-index:6;}
-  .cards .card:nth-child(n+7){z-index:7;}
-  .card.red{color:#c8102e;} .card.red{border-color:var(--line);}
-  .card.down{background:var(--grey);border-color:var(--grey);}
-  .card.mine-hidden{border-style:dashed;}
-  .card .pip{display:flex;flex-direction:column;align-items:flex-start;font-weight:600;}
-  .card .pip .r{font-size:21px;} .card .pip .s{font-size:16px;margin-top:1px;}
-  .card .pip.rev{align-self:flex-end;transform:rotate(180deg);}
-  .divider{border:none;border-top:3px solid var(--line);margin:3px 0;}
-  .msg{flex:1 1 auto;display:flex;flex-direction:column;justify-content:center;
-    text-align:center;padding:14px 4px;gap:7px;min-height:76px;}
-  .msg .headline{font-size:19px;font-weight:600;line-height:1.5;}
-  .msg .sub{font-size:13px;color:var(--dim);line-height:1.7;white-space:pre-line;}
-  .actions{display:flex;flex-direction:column;gap:8px;padding-top:4px;}
-  .row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;}
-  button.act{font:inherit;font-size:16px;font-weight:600;padding:12px 18px;border-radius:99px;
-    border:2.5px solid var(--line);background:#fff;color:var(--line);cursor:pointer;min-width:92px;}
-  button.act:active{background:#111;color:#fff;}
-  button.act[disabled]{border-color:#c9c9c9;color:#c9c9c9;cursor:default;}
-  button.act.solid{background:#111;color:#fff;border-color:#111;}
-  button.act.sm{font-size:14px;padding:9px 14px;min-width:68px;}
-  button.act.wide{width:100%;}
-  button.act:focus-visible{outline:3px solid #111;outline-offset:2px;}
-  .topbar{display:flex;align-items:center;justify-content:space-between;padding:10px 0 2px;}
+  /* ---- 戻る ---- */
+  .topbar{display:flex;align-items:center;justify-content:space-between;padding:6px 0 0;}
   .back{background:none;border:none;font:inherit;color:var(--line);font-size:16px;
     padding:8px 10px 8px 0;cursor:pointer;display:flex;align-items:center;gap:6px;}
   .back .arw{font-size:22px;line-height:1;}
@@ -77,18 +34,93 @@
   .banner{display:none;font-size:12px;font-weight:600;text-align:center;padding:8px;
     border:2px solid var(--line);border-radius:10px;margin:0 0 6px;}
   .banner.on{display:block;}
-  #log{font-size:12px;color:var(--dim);line-height:1.65;max-height:84px;overflow-y:auto;
-    padding:7px 2px 0;border-top:1px solid #e6e6e6;margin-top:8px;}
 
+  /* ---- ヘッダー ---- */
+  header{display:flex;align-items:center;justify-content:space-between;
+    padding:8px 2px 6px;font-size:15px;flex-wrap:wrap;gap:4px;}
+  .stack{display:flex;gap:12px;align-items:baseline;}
+  .stack b{font-size:18px;font-weight:700;}
+  .stack span{font-size:11px;color:var(--dim);}
+  .icon-btn{background:none;border:none;font:inherit;color:var(--line);
+    font-size:13px;padding:6px 3px;cursor:pointer;text-decoration:underline;}
+
+  /* ---- 席（左に情報 / 右にカード）---- */
+  .seat{display:flex;align-items:center;gap:8px;padding:4px 0;}
+  .side{flex:0 0 92px;width:92px;display:flex;flex-direction:column;align-items:flex-start;gap:5px;}
+  .side .nm{font-size:11px;letter-spacing:.1em;color:var(--dim);display:flex;align-items:center;}
+  .badge{display:inline-block;border:1px solid var(--line);border-radius:99px;
+    padding:1px 7px;font-size:10px;letter-spacing:.06em;margin-left:5px;color:var(--line);}
+  .state{display:inline-block;font-size:10px;font-weight:600;white-space:nowrap;
+    border:1.5px solid var(--line);border-radius:99px;padding:2px 8px;color:var(--line);
+    max-width:92px;overflow:hidden;text-overflow:ellipsis;}
+  .state.think{border-style:dashed;color:var(--dim);border-color:var(--dim);font-weight:400;}
+
+  .hands{flex:1;display:flex;flex-direction:column;align-items:center;gap:7px;min-width:0;}
+  .handrow{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;}
+  .handrow.inactive{opacity:.4;}
+  .cards{display:flex;padding-left:var(--ov);}
+  .total{font-size:22px;font-weight:600;min-width:56px;text-align:left;line-height:1.15;}
+  .total.small{font-size:15px;}
+  .total.unknown{color:var(--dim);font-size:15px;}
+
+  /* ---- カード ---- */
+  .card{width:var(--cw);height:var(--ch);flex:0 0 auto;position:relative;
+    border:2.5px solid var(--line);border-radius:10px;background:#fff;
+    margin-left:calc(var(--ov) * -1);
+    display:flex;flex-direction:column;justify-content:space-between;padding:4px 5px;line-height:1;}
+  .cards .card:nth-child(1){z-index:1;} .cards .card:nth-child(2){z-index:2;}
+  .cards .card:nth-child(3){z-index:3;} .cards .card:nth-child(4){z-index:4;}
+  .cards .card:nth-child(5){z-index:5;} .cards .card:nth-child(6){z-index:6;}
+  .cards .card:nth-child(n+7){z-index:7;}
+  .card.red{color:#c8102e;}
+  .card.down{background:var(--grey);border-color:var(--grey);}
+  .card.mine-hidden{border-style:dashed;}
+  .card .pip{display:flex;flex-direction:column;align-items:flex-start;font-weight:600;}
+  .card .pip .r{font-size:19px;} .card .pip .s{font-size:14px;margin-top:1px;}
+  .card .pip.rev{align-self:flex-end;transform:rotate(180deg);}
+
+  .divider{border:none;border-top:3px solid var(--line);margin:2px 0;}
+
+  /* ---- 説明とボタン ---- */
+  .msg{flex:1 1 auto;display:flex;flex-direction:column;justify-content:center;
+    text-align:center;padding:10px 4px;gap:5px;min-height:56px;}
+  .msg .headline{font-size:17px;font-weight:600;line-height:1.45;}
+  .msg .sub{font-size:13px;color:var(--dim);line-height:1.7;white-space:pre-line;}
+  .actions{display:flex;flex-direction:column;gap:8px;padding-top:4px;}
+  .row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;}
+  button.act{font:inherit;font-size:15px;font-weight:600;padding:11px 17px;border-radius:99px;
+    border:2.5px solid var(--line);background:#fff;color:var(--line);cursor:pointer;min-width:92px;}
+  button.act:active{background:#111;color:#fff;}
+  button.act[disabled]{border-color:#c9c9c9;color:#c9c9c9;cursor:default;}
+  button.act.solid{background:#111;color:#fff;border-color:#111;}
+  button.act.sm{font-size:14px;padding:9px 14px;min-width:68px;}
+  button.act.wide{width:100%;}
+  button.act:focus-visible{outline:3px solid #111;outline-offset:2px;}
+
+  /* ---- スプリット時：カードはそのまま、説明まわりを詰める ---- */
+  #scGame.split .msg{min-height:34px;padding:4px;gap:3px;}
+  #scGame.split .msg .headline{font-size:15px;line-height:1.35;}
+  #scGame.split .msg .sub{font-size:12px;line-height:1.5;}
+  #scGame.split .hands{gap:5px;}
+  #scGame.split .seat{padding:2px 0;}
+  #scGame.split header{padding:6px 2px 4px;}
+  /* 両者が同時にスプリットした時だけ、カードも一段階小さくする */
+  #scGame.split2{ --cw:52px; --ch:72px; --ov:17px; }
+  #scGame.split2 .total{font-size:16px;min-width:46px;}
+  #scGame.split2 .card{border-width:2px;border-radius:8px;padding:3px 4px;}
+  #scGame.split2 .card .pip .r{font-size:15px;} #scGame.split2 .card .pip .s{font-size:11px;}
+  #scGame.split2 .side{flex:0 0 84px;width:84px;gap:4px;}
+
+  /* ---- シート（ルール / 残りカード / 成績）---- */
   .sheet{position:fixed;inset:0;background:#fff;z-index:20;overflow-y:auto;display:none;
     padding:calc(20px + env(safe-area-inset-top)) 20px calc(28px + env(safe-area-inset-bottom));}
   .sheet.open{display:block;}
   .sheet-inner{max-width:520px;margin:0 auto;}
   .sheet h1{font-size:22px;margin:0 0 4px;} .sheet h2{font-size:17px;margin:24px 0 8px;}
   .sheet h3{font-size:15px;margin:16px 0 6px;}
-  .sheet ol{padding-left:20px;margin:6px 0;} .sheet ol li{margin:4px 0;}
   .sheet p,.sheet li{font-size:14px;line-height:1.75;}
   .sheet ul{padding-left:18px;margin:6px 0;}
+  .sheet ol{padding-left:20px;margin:6px 0;} .sheet ol li{margin:4px 0;}
   .sheet table{width:100%;border-collapse:collapse;font-size:13px;margin:8px 0;}
   .sheet th,.sheet td{border:1px solid #ddd;padding:6px 8px;text-align:left;}
   .sheet th{background:#f5f5f5;font-weight:600;}
@@ -96,6 +128,13 @@
   .cell{border:2px solid var(--line);border-radius:9px;padding:7px 4px;text-align:center;}
   .cell .rk{font-size:17px;font-weight:700;} .cell .ct{font-size:12px;color:var(--dim);margin-top:2px;}
   .cell.low{border-color:#c9c9c9;} .cell.low .rk{color:#c9c9c9;}
+  .hrow{display:flex;align-items:baseline;gap:9px;padding:9px 2px;border-bottom:1px solid #eee;font-size:14px;}
+  .hrow .hn{color:var(--dim);font-size:12px;min-width:34px;}
+  .hrow .hd{font-size:10px;border:1px solid #ddd;border-radius:99px;
+    padding:1px 7px;color:var(--dim);white-space:nowrap;}
+  .hrow .hv{font-weight:700;min-width:52px;text-align:right;}
+  .hrow .hv.win{color:#137333;} .hrow .hv.lose{color:#c8102e;}
+  .hrow .hnote{font-size:12px;color:var(--dim);}
   @media (prefers-reduced-motion: reduce){*{transition:none!important;}}
 </style>
 </head>
@@ -130,23 +169,32 @@
       <div><b id="pot">0</b><span> ポット</span></div>
     </div>
     <div class="stack">
+      <button class="icon-btn" id="scoreBtn">0勝0敗 <b>+0</b></button>
       <button class="icon-btn" id="countBtn">残り <b id="deckLeft">104</b></button>
       <button class="icon-btn" id="rulesBtn">ルール</button>
     </div>
   </header>
   <section class="seat">
-    <div class="seat-label" id="topLabel">相手</div>
+    <div class="side" id="topLabel"></div>
     <div class="hands" id="topHands"></div>
   </section>
   <hr class="divider">
   <section class="seat">
+    <div class="side" id="botLabel"></div>
     <div class="hands" id="botHands"></div>
-    <div class="seat-label" id="botLabel" style="margin:7px 0 0">あなた</div>
   </section>
   <div class="msg"><div class="headline" id="headline">&nbsp;</div><div class="sub" id="sub">&nbsp;</div></div>
   <div class="actions" id="actions"></div>
-  <div id="log"></div>
 </div>
+
+<div class="sheet" id="scoreSheet"><div class="sheet-inner">
+  <div class="topbar"><button class="back" id="scoreBack"><span class="arw">&#8249;</span>もどる</button></div>
+  <h1>成績</h1>
+  <p id="scoreHead" style="font-size:19px;font-weight:700;margin:6px 0 14px"></p>
+  <div id="scoreRows"></div>
+  <div style="height:20px"></div>
+  <button class="act solid wide" id="closeScore">閉じる</button>
+</div></div>
 
 <div class="sheet" id="countSheet"><div class="sheet-inner">
   <div class="topbar"><button class="back" id="countBack"><span class="arw">&#8249;</span>もどる</button></div>
@@ -289,6 +337,7 @@
 
 <script>
 
+
 "use strict";
 const $ = id => document.getElementById(id);
 function showScreen(id){ ["scTitle","scLobby","scGame"].forEach(s=>$(s).classList.toggle("on", s===id)); }
@@ -361,18 +410,22 @@ function person(str, viewer){
 const pick = (v,viewer)=> (v && typeof v==="object" && !Array.isArray(v)) ? (v[viewer]||"") : (v||"");
 
 function newGame(seed){
-  S={ chips:{p:START,c:START}, dealer:"c", handNo:0, shoe:[], discard:[], log:[],
+  S={ chips:{p:START,c:START}, dealer:"c", handNo:0, shoe:[], discard:[], log:[], lastAct:{p:"",c:""}, record:[],
       rng:(seed>>>0)||0x9E3779B9 };
   S.shoe=buildShoe();
   newHand();
 }
+function setAct(seat, text){ if(S) S.lastAct[seat]=text; }
 function newHand(){
   if(S.chips.p<=0 || S.chips.c<=0) return gameOver();
+  // 前のハンドのカードを捨札へ（結果画面の間は手札に残しておくため、ここで移す）
+  if(S.hands){ for(const seat of ["p","c"]) for(const h of S.hands[seat]) for(const c of h.cards) S.discard.push(c); }
   if(S.shoe.length < RESHUFFLE){ S.shoe=buildShoe(); S.discard=[]; logLine("— シャッフル —"); }
   S.handNo++;
   S.pot=0; S.contrib={p:0,c:0}; S.dd={p:false,c:false}; S.split={p:false,c:false};
-  S.revealAll=false; S.bettingClosed=false;
+  S.revealAll=false; S.bettingClosed=false; S.lastAct={p:'',c:''};
   S.hands={ p:[mkHand()], c:[mkHand()] };
+  S.chipsAtDeal={p:S.chips.p, c:S.chips.c};
   post(S.dealer,ANTE_D); post(nonDealer(),ANTE_ND);
   logLine(`— ハンド ${S.handNo}：ディーラーは${tok(S.dealer)}（残り${S.shoe.length}枚）—`);
   startBet();
@@ -387,6 +440,20 @@ function logLine(t){ S.log.push(t); if(S.log.length>60) S.log.shift(); }
 function draw(hidden){ return {...S.shoe.pop(), hidden:!!hidden}; }
 
 /* ---------- 描画ペイロード ---------- */
+/* 取りうる合計をすべて返す（エースは1と11の両方を試す）。バーストする値は除く */
+function possibleTotals(cards){
+  const hardSum = cards.reduce((a,c)=>a+V1(c.r),0);
+  const aces = cards.filter(c=>c.r==="A").length;
+  const out=[];
+  for(let k=0;k<=aces;k++){
+    const v = hardSum + k*10;
+    if(v<=21 && !out.includes(v)) out.push(v);
+  }
+  if(!out.length) out.push(hardSum);        // 全部バーストなら最小値のみ
+  return out.sort((a,b)=>a-b);
+}
+const totalLabel = cards => possibleTotals(cards).join(" / ");
+
 function seatData(who, viewer){
   const hs=S.hands[who], isMe=(who===viewer);
   return hs.map((h,idx)=>{
@@ -397,7 +464,7 @@ function seatData(who, viewer){
     });
     let t,cls="";
     if(S.revealAll || isMe){ const v=handTotal(h); t = v>21 ? "バースト" : String(v); }
-    else if(hasHidden(h)){ t = visTotal(h)+"+?"; cls="unknown"; }
+    else if(hasHidden(h)){ t = totalLabel(visCards(h))+"+?"; cls="unknown"; }
     else { const v=handTotal(h); t = v>21 ? "バースト" : String(v); }
     const dim = hs.length>1 && S.phase==="draw" && S.turn===who && S.handIdx!==idx;
     return {cards, total:t, cls:cls+(hs.length>1?" small":""), dim};
@@ -417,6 +484,30 @@ function countsFor(viewer){
   const unknown=Object.values(rem).reduce((a,b)=>a+b,0);
   return {rem, unknown, hilo:hl, tc:(hl/Math.max(unknown/52,0.4)).toFixed(1)};
 }
+/* その席がいま操作待ちか（CPUの思考中も含む） */
+function isThinking(seat, v){
+  if(v.actor==="any") return seat===MYSEAT;
+  if(v.actor) return v.actor===seat;
+  // ボタンが無い＝CPUが考えている場面。手番の席に出す
+  if(MODE==="cpu" && seat==="c"){
+    if(S.phase==="bet" && S.bet) return S.bet.actor==="c";
+    if(S.phase==="draw") return S.turn==="c";
+    if(S.phase==="surrender") return true;
+  }
+  return false;
+}
+
+/* 累計成績と、ハンドごとの明細 */
+function scoreFor(viewer){
+  const rec=S.record||[]; let w=0,l=0,net=0;
+  const rows=rec.map(r=>{
+    const d = viewer==="p" ? r.dp : r.dc;
+    if(d>0) w++; else if(d<0) l++;
+    net+=d;
+    return {n:r.n, dealer:(r.dealer===viewer), d, note:r.note};
+  }).reverse();
+  return {w,l,net,rows:rows.slice(0,40)};
+}
 function buildPayload(viewer){
   const v=S.view||{}, opp=other(viewer);
   const mine=(v.actor===viewer || v.actor==="any");
@@ -428,6 +519,11 @@ function buildPayload(viewer){
     topDealer:S.dealer===opp, botDealer:S.dealer===viewer,
     top:seatData(opp,viewer), bot:seatData(viewer,viewer),
     myChips:S.chips[viewer], oppChips:S.chips[opp], pot:S.pot,
+    topAct: S.lastAct ? (S.lastAct[opp]||"") : "",
+    botAct: S.lastAct ? (S.lastAct[viewer]||"") : "",
+    topThinking: isThinking(opp, v),
+    botThinking: isThinking(viewer, v),
+    score: scoreFor(viewer),
     counts:countsFor(viewer),
     headline:person(pick(v.headline,viewer),viewer), sub,
     rows: mine ? (v.rows||[]).map(r=>r.map(b=>({id:b.id,t:b.t,disabled:!!b.disabled,solid:!!b.solid,sm:!!b.sm}))) : [],
@@ -473,8 +569,23 @@ function paint(pl,onBtn){
   $("myChips").textContent=pl.myChips; $("oppChips").textContent=pl.oppChips;
   $("oppChipsLabel").textContent=" "+pl.topLabel; $("pot").textContent=pl.pot;
   $("deckLeft").textContent=pl.counts.unknown;
-  $("topLabel").innerHTML=pl.topLabel+(pl.topDealer?`<span class="badge">D</span>`:"");
-  $("botLabel").innerHTML=pl.botLabel+(pl.botDealer?`<span class="badge">D</span>`:"");
+
+  const sc=pl.score||{w:0,l:0,net:0};
+  $("scoreBtn").innerHTML = `${sc.w}勝${sc.l}敗 <b>${sc.net>=0?"+":""}${sc.net}</b>`;
+
+  const side = (name, isD, act, thinking) =>
+    `<span class="nm">${name}${isD?`<span class="badge">D</span>`:""}</span>` +
+    (thinking ? `<span class="state think">考え中…</span>`
+              : act ? `<span class="state">${act}</span>` : "");
+  $("topLabel").innerHTML = side(pl.topLabel, pl.topDealer, pl.topAct, pl.topThinking);
+  $("botLabel").innerHTML = side(pl.botLabel, pl.botDealer, pl.botAct, pl.botThinking);
+  // 段が増えたら説明文を詰める。両者ともスプリットした時だけカードも縮める
+  const gs=$("scGame");
+  if(gs){
+    gs.classList[(pl.top.length>1 || pl.bot.length>1)?"add":"remove"]("split");
+    gs.classList[(pl.top.length>1 && pl.bot.length>1)?"add":"remove"]("split2");
+  }
+
   $("topHands").innerHTML=handsHTML(pl.top);
   $("botHands").innerHTML=handsHTML(pl.bot);
   $("headline").textContent=pl.headline||"\u00a0";
@@ -491,8 +602,21 @@ function paint(pl,onBtn){
     });
     act.appendChild(d);
   });
-  const lg=$("log"); lg.innerHTML=(pl.log||[]).map(l=>`<div>${l}</div>`).join(""); lg.scrollTop=lg.scrollHeight;
 }
+$("scoreBtn").onclick=()=>{
+  if(!LASTPL) return;
+  const sc=LASTPL.score||{w:0,l:0,net:0,rows:[]};
+  $("scoreHead").textContent = `${sc.w}勝 ${sc.l}敗 ／ 収支 ${sc.net>=0?"+":""}${sc.net}`;
+  $("scoreRows").innerHTML = sc.rows.length
+    ? sc.rows.map(r=>`<div class="hrow">
+        <span class="hn">#${r.n}</span>
+        <span class="hd">${r.dealer?"ディーラー":"ノンディーラー"}</span>
+        <span class="hv ${r.d>0?"win":r.d<0?"lose":""}">${r.d>0?"+":""}${r.d}</span>
+        <span class="hnote">${r.note||""}</span></div>`).join("")
+    : `<p class="note" style="text-align:left">まだ記録がありません。</p>`;
+  $("scoreSheet").classList.add("open");
+};
+$("scoreBack").onclick=()=>$("scoreSheet").classList.remove("open");
 $("countBtn").onclick=()=>{
   if(!LASTPL) return;
   const c=LASTPL.counts;
@@ -558,10 +682,10 @@ function betUI(seat,raise){
 function betAct(seat,kind,amt){
   const b=S.bet;
   if(kind==="fold") return doFold(seat);
-  if(kind==="check"){ b.acted[seat]=true; logLine(`${tok(seat)} はチェック。`); }
-  if(kind==="call"){ const c=toCall(seat); betPut(seat,c); b.acted[seat]=true; logLine(`${tok(seat)} はコール（${c}）。`); }
-  if(kind==="raise"){ const c=toCall(seat); betPut(seat,c+amt); b.acted[seat]=true; b.acted[other(seat)]=false; logLine(`${tok(seat)} はレイズ（+${amt}）。`); }
-  if(kind==="allin"){ const a=S.chips[seat]; betPut(seat,a); b.acted[seat]=true; b.acted[other(seat)]=false; logLine(`${tok(seat)} はオールイン（${a}）。`); }
+  if(kind==="check"){ b.acted[seat]=true; setAct(seat,"チェック"); logLine(`${tok(seat)} はチェック。`); }
+  if(kind==="call"){ const c=toCall(seat); betPut(seat,c); b.acted[seat]=true; setAct(seat,`コール ${c}`); logLine(`${tok(seat)} はコール（${c}）。`); }
+  if(kind==="raise"){ const c=toCall(seat); betPut(seat,c+amt); b.acted[seat]=true; b.acted[other(seat)]=false; setAct(seat,`レイズ +${amt}`); logLine(`${tok(seat)} はレイズ（+${amt}）。`); }
+  if(kind==="allin"){ const a=S.chips[seat]; betPut(seat,a); b.acted[seat]=true; b.acted[other(seat)]=false; setAct(seat,`オールイン ${a}`); logLine(`${tok(seat)} はオールイン（${a}）。`); }
   b.actor=other(seat); stepBet();
 }
 function cpuBet(){
@@ -571,13 +695,13 @@ function cpuBet(){
     if(st<0.30 && odds>0.30 && r<0.7) return doFold("c");
     if(st>0.74 && r<0.35 && S.chips.c>c+12){
       const add=Math.min(S.chips.c-c, Math.max(10,Math.round(S.pot*0.5)));
-      betPut("c",c+add); b.acted.c=true; b.acted.p=false; logLine(`{C} はレイズ（+${add}）。`);
-    } else { betPut("c",c); b.acted.c=true; logLine(`{C} はコール（${c}）。`); }
+      betPut("c",c+add); b.acted.c=true; b.acted.p=false; setAct("c",`レイズ +${add}`); logLine(`{C} はレイズ（+${add}）。`);
+    } else { betPut("c",c); b.acted.c=true; setAct("c",`コール ${c}`); logLine(`{C} はコール（${c}）。`); }
   } else {
     if(st>0.68 && r<0.5 && S.chips.c>12){
       const add=Math.min(S.chips.c, Math.max(10,Math.round(S.pot*0.5)));
-      betPut("c",add); b.acted.c=true; b.acted.p=false; logLine(`{C} はベット（${add}）。`);
-    } else { b.acted.c=true; logLine("{C} はチェック。"); }
+      betPut("c",add); b.acted.c=true; b.acted.p=false; setAct("c",`ベット ${add}`); logLine(`{C} はベット（${add}）。`);
+    } else { b.acted.c=true; setAct("c","チェック"); logLine("{C} はチェック。"); }
   }
   b.actor="p"; stepBet();
 }
@@ -596,8 +720,10 @@ function startSurrender(seat){
   if(isCPU(seat)){
     const h=S.hands.c[0], t=handTotal(h);
     const upCard=S.hands.p[0].cards[1], up = upCard.r==="A" ? 11 : V1(upCard.r);
-    if(t===16 && up>=10) { later(()=>doSurrender("c"),600);
-      return show({headline:"{C} が判断中…", sub:"サレンダーするか決めています。"}); }
+    if(t===16 && up>=10) {
+      show({headline:"{C} が判断中…", sub:"サレンダーするか決めています。"});
+      return later(()=>doSurrender("c"), 600);   // show を先に。later は再生中に即実行されるため
+    }
     return later(next,400);
   }
   const back=Math.floor(S.contrib[seat]/2);
@@ -612,14 +738,16 @@ function doSurrender(seat){
   const back=Math.floor(S.contrib[seat]/2), w=other(seat);
   S.chips[seat]+=back; S.pot-=back;
   S.chips[w]+=S.pot;
+  setAct(seat,"サレンダー");
   logLine(`${tok(seat)} がサレンダー（${back} 返却）。${tok(w)} が ${S.pot} を獲得。`);
-  S.pot=0; endHand({[seat]:"サレンダーしました", [w]:"相手がサレンダーしました"}, "拠出の半分が戻りました。");
+  S.pot=0; recordHand("サレンダー"); endHand({[seat]:"サレンダーしました", [w]:"相手がサレンダーしました"}, "拠出の半分が戻りました。");
 }
 function doFold(seat){
   const w=other(seat);
   S.chips[w]+=S.pot;
+  setAct(seat,"フォールド");
   logLine(`${tok(seat)} がフォールド。${tok(w)} が ${S.pot} を獲得。`);
-  S.pot=0; endHand({[seat]:"フォールドしました", [w]:"相手がフォールドしました"}, "");
+  S.pot=0; recordHand("フォールド"); endHand({[seat]:"フォールドしました", [w]:"相手がフォールドしました"}, "");
 }
 
 /* ---------- ドローフェーズ ---------- */
@@ -634,7 +762,7 @@ function drawUI(seat){
   const hs=S.hands[seat], h=hs[S.handIdx];
   if(h.stood) return nextHandIdx(seat);
   if(mustAutoStand(h)){
-    h.stood=true;
+    h.stood=true; setAct(seat,"自動スタンド");
     logLine(`${tok(seat)} は自動スタンド（これ以上引けば必ずバースト）。`);
     return show({actor:"any", headline:"自動スタンド",
       sub:{[seat]:"これ以上引けば必ずバーストするため、自動的にスタンドしました。",
@@ -659,7 +787,7 @@ function drawUI(seat){
     rows:[
       [ {t:"ヒット", f:()=>{ h.cards.push(draw(false));
             logLine(`${tok(seat)} がヒット → ${h.cards[h.cards.length-1].r}`); drawUI(seat); }},
-        {t:"スタンド", f:()=>{ h.stood=true; logLine(`${tok(seat)} はスタンド。`); nextHandIdx(seat); }} ],
+        {t:"スタンド", f:()=>{ h.stood=true; setAct(seat,"スタンド"); logLine(`${tok(seat)} はスタンド。`); nextHandIdx(seat); }} ],
       [ {t:"ダブルダウン", disabled:!canDD, f:()=>doDD(seat)},
         {t:"スプリット", disabled:!canSplit, f:()=>doSplit(seat)} ]
     ]});
@@ -673,6 +801,7 @@ function doSplit(seat){
     {cards:[b, draw(false)], stood:false}    // 第2ハンド：公開して付与
   ];
   S.handIdx=0;
+  setAct(seat,"スプリット");
   logLine(`${tok(seat)} がスプリット。伏せ札を公開し、各ハンドに1枚ずつ配りました。`);
   show({actor:"any", headline:{[seat]:"スプリットしました",[other(seat)]:"相手がスプリットしました"},
     sub:"第1ハンドは伏せて、第2ハンドは公開して1枚ずつ配られました。ポットは等分されます。",
@@ -683,6 +812,7 @@ function doDD(seat){
   const add=Math.min(S.contrib[seat], S.chips[seat]);
   S.chips[seat]-=add; S.contrib[seat]+=add; S.pot+=add; S.dd[seat]=true;
   h.cards.push(draw(false)); h.stood=true;
+  setAct(seat,`ダブルダウン +${add}`);
   logLine(`${tok(seat)} がダブルダウン（+${add}） → ${h.cards[h.cards.length-1].r}`);
   const need=Math.min(S.contrib[opp], S.chips[opp]);
   if(need<=0) return show({actor:"any", headline:"ダブルダウン", sub:"相手に追加投入の余力がありません。",
@@ -694,6 +824,7 @@ function doDD(seat){
     return later(()=>{
       if(cpuStrength()<0.26 && rnd()<0.6) return doFold("c");
       S.chips.c-=need; S.contrib.c+=need; S.pot+=need; refund();
+      setAct("c",`応じる +${need}`);
       logLine(`{C} は応じました（+${need}）。`);
       show({actor:"any", headline:"{C} が応じました", sub:`{C} が ${need} を追加投入しました。`,
         rows:[[{t:"次へ",solid:true,f:()=>nextHandIdx(seat)}]]});
@@ -710,7 +841,7 @@ function doDD(seat){
 function cpuDraw(){
   const hs=S.hands.c, h=hs[S.handIdx];
   if(h.stood) return nextHandIdx("c");
-  if(mustAutoStand(h)){ h.stood=true; logLine("{C} は自動スタンド。"); return nextHandIdx("c"); }
+  if(mustAutoStand(h)){ h.stood=true; setAct("c","自動スタンド"); logLine("{C} は自動スタンド。"); return nextHandIdx("c"); }
   const t=handTotal(h);
   if(!S.split.c && hs.length===1 && h.cards.length===2 && V1(h.cards[0].r)===8 && V1(h.cards[1].r)===8){
     doSplit("c");
@@ -721,11 +852,12 @@ function cpuDraw(){
   if(!S.split.c && !S.bettingClosed && S.chips.c>0 && h.cards.length===2 && (t===10||t===11)) return doDD("c");
   if(t<16){
     h.cards.push(draw(false));
+    setAct("c",`ヒット → ${h.cards[h.cards.length-1].r}`);
     logLine(`{C} がヒット → ${h.cards[h.cards.length-1].r}`);
     show({headline:"{C} がヒット", sub:"引いたカードは公開されます。"});
     return later(cpuDraw,650);
   }
-  h.stood=true; logLine("{C} はスタンド。"); nextHandIdx("c");
+  h.stood=true; setAct("c","スタンド"); logLine("{C} はスタンド。"); nextHandIdx("c");
 }
 
 /* ---------- ショーダウン ---------- */
@@ -747,7 +879,7 @@ function splitEven(x,n){ const b=Math.floor(x/n), o=Array(n).fill(b);
   let r=x-b*n; for(let i=0;i<n&&r>0;i++){o[i]++;r--;} return o; }
 
 function showdown(){
-  S.revealAll=true;
+  S.revealAll=true; let lastWhy="";
   const ph=S.hands.p, ch=S.hands.c, n=Math.max(ph.length,ch.length);
   const sh=splitEven(S.pot,n); let winP=0;
   for(let i=0;i<n;i++){
@@ -758,17 +890,25 @@ function showdown(){
     const ta=handTotal(a), tb=handTotal(b);
     const why = r==="tie"?"引き分け" : r==="bothbust"?"両者バースト"
       : (isNatural(a)!==isNatural(b))?"ナチュラル":"";
+    if(why) lastWhy=why;
     logLine(`${n>1?`勝負${i+1}：`:""}{P} ${ta>21?"バースト":ta} ／ {C} ${tb>21?"バースト":tb} → ${tok(w)}が${sh[i]}獲得${why?`（${why}）`:""}`);
   }
-  S.pot=0;
+  S.pot=0; recordHand(lastWhy);
   const head = s => { const w = s==="p"?winP:n-winP;
     if(n===1) return w===1 ? "あなたの勝ち" : "相手の勝ち";
     return w===n ? "あなたの2勝" : w===0 ? "相手の2勝" : "1勝1敗"; };
   endHand({p:head("p"),c:head("c")}, "ログで内訳を確認できます。");
 }
+function recordHand(note){
+  const before = S.chipsAtDeal || {p:START,c:START};
+  S.record.push({
+    n:S.handNo, dealer:S.dealer, note:note||"",
+    dp:S.chips.p-before.p, dc:S.chips.c-before.c
+  });
+  if(S.record.length>200) S.record.shift();
+}
 function endHand(headline, sub){
   S.phase="result"; S.revealAll=true;
-  for(const seat of ["p","c"]) for(const h of S.hands[seat]) for(const c of h.cards) S.discard.push(c);
   show({actor:"any", headline, sub, rows:[[{t:"次のハンドへ", solid:true, f:nextHand}]]});
 }
 function nextHand(){ S.dealer=other(S.dealer); newHand(); }
@@ -839,6 +979,25 @@ function saveSession(){
 function loadSession(){ try{ const r=store.get(SKEY); return r?JSON.parse(r):null; }catch(e){ return null; } }
 function clearSession(){ store.del(SKEY); }
 
+/* 保存されていた画面が、いまの局面と食い違っていないか */
+function staleView(){
+  const v=S.view; if(!v) return true;
+  const head = typeof v.headline==="string" ? v.headline : Object.values(v.headline||{}).join(" ");
+  // ハンドが終わっているのに、進行中の画面が残っている
+  if(S.phase!=="result" && S.phase!=="over" && S.revealAll) return true;
+  if((S.phase==="result"||S.phase==="over") && /判断中|ドローフェーズ|ベットラウンド|サレンダー判断/.test(head)) return true;
+  return false;
+}
+/* いまの局面から画面を作り直す */
+function rebuildView(){
+  if(S.phase==="result" || S.phase==="over"){
+    show({actor:"any", headline:"前回の結果",
+      sub:"中断していた対戦を再開しました。", rows:[[{t:"次のハンドへ", solid:true, f:nextHand}]]});
+  } else if(S.phase==="draw"){ drawUI(S.turn);
+  } else if(S.phase==="surrender"){ startSurrender(nonDealer());
+  } else { startBet(); }
+}
+
 /* ---------- 履歴の再生 ---------- */
 function rebuild(seed, history){
   REPLAY=true; HISTORY=[]; newGame(seed);
@@ -847,7 +1006,12 @@ function rebuild(seed, history){
     const f=S.pending[id]; S.pending={}; HISTORY.push(id); f();
   }
   REPLAY=false;
-  if(S && S.view) show(S.view);
+  // 再生中に later() が即実行される都合で、最後の view が古い可能性がある。
+  // 実際の局面と食い違っていたら、いまの局面から画面を作り直す。
+  if(S){
+    if(S.view && !staleView()) show(S.view);
+    else rebuildView();
+  }
   saveSession();
 }
 
@@ -1083,6 +1247,7 @@ function toTitle(ask){
 $("gameBack").onclick=()=>toTitle(true);
 $("lobbyBack").onclick=()=>toTitle(false);
 refreshResume();
+
 
 </script>
 </body>
