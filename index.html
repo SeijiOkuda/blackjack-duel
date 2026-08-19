@@ -36,13 +36,19 @@
   .banner.on{display:block;}
 
   /* ---- ヘッダー ---- */
-  header{display:flex;align-items:center;justify-content:space-between;
-    padding:8px 2px 6px;font-size:15px;flex-wrap:wrap;gap:4px;}
-  .stack{display:flex;gap:12px;align-items:baseline;}
-  .stack b{font-size:18px;font-weight:700;}
-  .stack span{font-size:11px;color:var(--dim);}
+  header{display:flex;align-items:baseline;justify-content:space-between;
+    padding:7px 0 5px;font-size:14px;gap:6px;flex-wrap:nowrap;overflow:hidden;}
+  .stack{display:flex;gap:9px;align-items:baseline;min-width:0;}
+  .stack>div{white-space:nowrap;}
+  .stack b{font-size:16px;font-weight:700;}
+  .stack span{font-size:10px;color:var(--dim);margin-left:1px;}
   .icon-btn{background:none;border:none;font:inherit;color:var(--line);
-    font-size:13px;padding:6px 3px;cursor:pointer;text-decoration:underline;}
+    font-size:12px;padding:4px 2px;cursor:pointer;text-decoration:underline;white-space:nowrap;}
+  .icon-btn b{font-size:14px;}
+  @media (max-width:359px){
+    .stack{gap:7px;} .stack b{font-size:15px;} .icon-btn{font-size:11px;}
+    .stack span{font-size:9px;}
+  }
 
   /* ---- 席（左に情報 / 右にカード）---- */
   .seat{display:flex;align-items:center;gap:8px;padding:4px 0;}
@@ -169,8 +175,8 @@
       <div><b id="pot">0</b><span> ポット</span></div>
     </div>
     <div class="stack">
-      <button class="icon-btn" id="scoreBtn">0勝0敗 <b>+0</b></button>
-      <button class="icon-btn" id="countBtn">残り <b id="deckLeft">104</b></button>
+      <button class="icon-btn" id="scoreBtn">0-0 <b>+0</b></button>
+      <button class="icon-btn" id="countBtn">残 <b id="deckLeft">104</b></button>
       <button class="icon-btn" id="rulesBtn">ルール</button>
     </div>
   </header>
@@ -244,7 +250,7 @@
   <ol>
     <li><b>配札</b> … 2枚ずつ配られます。<b>1枚は表向き（相手にも見える）</b>、<b>1枚は裏向き（自分だけ見える）</b></li>
     <li><b>ベットラウンド</b> … 賭けるかどうかを決めます（1回だけ）</li>
-    <li><b>サレンダー判断</b> … 勝てそうになければ、半額だけ払って降りられます</li>
+        <li><b>サレンダー判断</b> … 勝てそうになければ、半額だけ払って降りられます</li>
     <li><b>ドロー</b> … カードを引くか止めるかを決めます。先攻→後攻の順</li>
     <li><b>ショーダウン</b> … 裏向きのカードを公開して、勝敗を決めます</li>
   </ol>
@@ -300,6 +306,28 @@
     <li>各手札にヒットはできますが、ダブルダウンはできません</li>
   </ul>
 
+  <h3>インシュランス（保険）</h3>
+  <p><b>相手の表札が A か 10札（10・J・Q・K）のとき</b>、ベットラウンドの自分の手番で宣言できます。<b>賭けとは別枠</b>なので、買ったあとも通常どおりチェック・コール・レイズができます。両者とも買えます。</p>
+  <ul>
+    <li><b>的中</b>（相手が2枚で21＝ナチュラル）→ この勝負は<b>なかったこと</b>になり、
+      出したチップも保険料も<b>全額戻ります</b></li>
+    <li><b>外れ</b> → 保険料はポットに加算され、勝負は続きます。
+      <b>相手の伏せ札は公開されません</b>（「ナチュラルではない」とだけ分かります）</li>
+  </ul>
+  <p>保険料は表札によって変わります。ナチュラルである確率が大きく違うためです。</p>
+  <table>
+    <tr><th>相手の表札</th><th>ナチュラルの確率</th><th>保険料</th><th>損益の分かれ目</th></tr>
+    <tr><td><b>A</b>（伏せが10札か）</td><td>31.1 %</td><td>拠出の <b>1/2</b></td><td>33.3 %</td></tr>
+    <tr><td><b>10・J・Q・K</b>（伏せがAか）</td><td>7.8 %</td><td>拠出の <b>1/12</b></td><td>7.7 %</td></tr>
+  </table>
+  <p class="note" style="text-align:left">どちらも<b>素の確率がわずかに分かれ目を下回る</b>ように設定してあります。
+  つまり<b>普段は買わない方が得</b>。ただし「残り」を見て狙いの札が多く残っていると分かれば、確率が上回り買う価値が出ます。
+  <b>カードを数えた成果を現金に換えるための手</b>です。</p>
+  <p class="note" style="text-align:left">この手は、ノンディーラーのナチュラルへの対抗策でもあります。
+  ノンディーラーがナチュラルを持つと、同点でも勝てるため<b>負ける経路がなくなり、リスクなしでレイズできます</b>。
+  保険が的中すれば勝負ごと無効になるので、膨らんだポットも取られません。相手が押してくるほど保険料は上がりますが、
+  的中したときに消える額も大きくなります。</p>
+
   <h3>サレンダー</h3>
   <p><b>まだ1枚も引いていないとき限定</b>で、<b>賭けた額の半分だけ払って降りられます</b>。分の悪い手を早めに切るための逃げ道です。</p>
   <p class="note" style="text-align:left">「フォールド」は全額を捨てて降りること。相手のレイズが大きいときはフォールド、小さいときはサレンダーの方が得です。</p>
@@ -326,6 +354,7 @@
     <li><b>ダブルダウンは合計10か11のときだけ。</b>12以上でやると大損します</li>
     <li><b>サレンダーは「16 vs 相手の10かA」だけ。</b>使いすぎると損です</li>
     <li><b>スプリットは 8・8 のときだけ。</b>全部のペアで分けると損です</li>
+    <li><b>インシュランスは真カウントが +2 以上のときだけ。</b>普段は買うと損です</li>
   </ul>
 
   <h2>12. ゲームの終わり</h2>
@@ -352,6 +381,7 @@ let MYSEAT="p";              // 部屋を作った側が "p"、入った側が "
 let HISTORY=[];              // 行動の履歴。これだけを送り合う
 let REPLAY=false;            // 履歴の再生中はタイマーを即時実行し、描画を省く
 const later=(f,ms)=>REPLAY?f():setTimeout(f,ms);
+const THINK=1000;   // CPU が考えているように見せる最低時間
 const isCPU = s => MODE==="cpu" && s==="c";
 const other = p => p==="p" ? "c" : "p";
 
@@ -410,7 +440,7 @@ function person(str, viewer){
 const pick = (v,viewer)=> (v && typeof v==="object" && !Array.isArray(v)) ? (v[viewer]||"") : (v||"");
 
 function newGame(seed){
-  S={ chips:{p:START,c:START}, dealer:"c", handNo:0, shoe:[], discard:[], log:[], lastAct:{p:"",c:""}, record:[],
+  S={ chips:{p:START,c:START}, dealer:"c", handNo:0, shoe:[], discard:[], log:[], lastAct:{p:"",c:""}, ins:{p:false,c:false}, insLost:{p:0,c:0}, record:[],
       rng:(seed>>>0)||0x9E3779B9 };
   S.shoe=buildShoe();
   newHand();
@@ -423,7 +453,7 @@ function newHand(){
   if(S.shoe.length < RESHUFFLE){ S.shoe=buildShoe(); S.discard=[]; logLine("— シャッフル —"); }
   S.handNo++;
   S.pot=0; S.contrib={p:0,c:0}; S.dd={p:false,c:false}; S.split={p:false,c:false};
-  S.revealAll=false; S.bettingClosed=false; S.lastAct={p:'',c:''};
+  S.revealAll=false; S.bettingClosed=false; S.lastAct={p:'',c:''}; S.ins={p:false,c:false}; S.insLost={p:0,c:0};
   S.hands={ p:[mkHand()], c:[mkHand()] };
   S.chipsAtDeal={p:S.chips.p, c:S.chips.c};
   post(S.dealer,ANTE_D); post(nonDealer(),ANTE_ND);
@@ -571,7 +601,7 @@ function paint(pl,onBtn){
   $("deckLeft").textContent=pl.counts.unknown;
 
   const sc=pl.score||{w:0,l:0,net:0};
-  $("scoreBtn").innerHTML = `${sc.w}勝${sc.l}敗 <b>${sc.net>=0?"+":""}${sc.net}</b>`;
+  $("scoreBtn").innerHTML = `${sc.w}-${sc.l} <b>${sc.net>=0?"+":""}${sc.net}</b>`;
 
   const side = (name, isD, act, thinking) =>
     `<span class="nm">${name}${isD?`<span class="badge">D</span>`:""}</span>` +
@@ -617,6 +647,7 @@ $("scoreBtn").onclick=()=>{
   $("scoreSheet").classList.add("open");
 };
 $("scoreBack").onclick=()=>$("scoreSheet").classList.remove("open");
+$("closeScore").onclick=()=>$("scoreSheet").classList.remove("open");
 $("countBtn").onclick=()=>{
   if(!LASTPL) return;
   const c=LASTPL.counts;
@@ -646,7 +677,7 @@ function stepBet(){
     b.actor=other(a);
     return stepBet();
   }
-  if(isCPU(a)) later(cpuBet,600); else betUI(a,false);
+  if(isCPU(a)) later(cpuBet,THINK); else betUI(a,false);
 }
 function finishBet(){
   // 超過分の返却（相手が払いきれなかった分は戻る）
@@ -674,9 +705,18 @@ function betUI(seat,raise){
     r1.push({t:"レイズ",disabled:S.chips[seat]<=c,f:()=>betUI(seat,true)});
     if(c>0) r1.push({t:"フォールド",f:()=>betAct(seat,"fold")});
     rows.push(r1);
+    // インシュランスは賭けの手番を消費しない。買ったあとも通常どおり行動できる
+    if(insurable(seat)){
+      const fee=insFee(seat), up=S.hands[other(seat)][0].cards[1].r;
+      rows.push([{t:`インシュランス ${fee}（表札 ${up}）`, sm:true,
+        f:()=>doInsurance(seat, ()=>betUI(seat,false))}]);
+    }
   }
   show({actor:seat, headline:"ベットラウンド",
-    sub:{[seat]: (c===0?"コールは不要です。":`コールには ${c} が必要です。`)+"\nドローが始まると賭け金は動かせません。", [other(seat)]:""},
+    sub:{[seat]: (c===0?"コールは不要です。":`コールには ${c} が必要です。`)
+        + "\nドローが始まると賭け金は動かせません。"
+        + (insurable(seat) ? "\nインシュランスは賭けとは別枠です。買っても手番は続きます。" : ""),
+      [other(seat)]:""},
     rows});
 }
 function betAct(seat,kind,amt){
@@ -689,6 +729,11 @@ function betAct(seat,kind,amt){
   b.actor=other(seat); stepBet();
 }
 function cpuBet(){
+  // 賭ける前にインシュランスを検討（カウントが効いているときだけ）
+  if(insurable("c") && parseFloat(countsFor("c").tc) >= 2){
+    show({headline:"{C} が判断中…", sub:"インシュランスを検討しています。"});
+    return later(()=>doInsurance("c", ()=>later(cpuBet,THINK)), THINK);
+  }
   const b=S.bet, c=toCall("c"), st=cpuStrength(), r=rnd();
   if(c>0){
     const odds=c/(S.pot+c);
@@ -713,6 +758,63 @@ function cpuStrength(){
 }
 
 /* ---------- サレンダー ---------- */
+/* ============================================================
+   インシュランス
+   ・相手の表札がAで、まだ1枚も引いていないときだけ宣言できる
+   ・保険料は自分の拠出額の半分
+   ・的中（相手がナチュラル）→ ハンド無効。両者の拠出も保険料も全額返す
+   ・外れ → 保険料を没収し、勝負は続行。相手の伏せ札は開かない
+   ============================================================ */
+/* 保険料の割合。表札によってナチュラル率が大きく違うため分ける
+   表札A   → 伏せ札が10札である確率 31.1% → 分岐 33.3% になる 1/2
+   表札10札 → 伏せ札がAである確率     7.8% → 分岐  7.7% になる 1/12 */
+function insRate(upRank){
+  if(upRank==="A") return 1/2;
+  if(["10","J","Q","K"].includes(upRank)) return 1/12;
+  return 0;
+}
+function insFee(seat){
+  const up=S.hands[other(seat)][0].cards[1];
+  const r=insRate(up.r);
+  return r ? Math.max(1, Math.round(S.contrib[seat]*r)) : 0;
+}
+function insurable(seat){
+  const opp=other(seat), oh=S.hands[opp][0];
+  if(!oh || oh.cards.length!==2) return false;          // 相手がまだ引いていない
+  if(S.hands[seat][0].cards.length!==2) return false;   // 自分もまだ引いていない
+  if(!insRate(oh.cards[1].r)) return false;             // 表札が A か 10札
+  if(S.ins && S.ins[seat]) return false;                // 二重に買わない
+  const fee=insFee(seat);
+  return fee>0 && S.contrib[seat]>0 && S.chips[seat]>=fee;
+}
+function doInsurance(seat, next){
+  if(!S.ins) S.ins={p:false,c:false};
+  if(!S.insLost) S.insLost={p:0,c:0};
+  const fee=insFee(seat), opp=other(seat);
+  S.chips[seat]-=fee; S.ins[seat]=fee;
+  setAct(seat, `インシュランス ${fee}`);
+  logLine(`${tok(seat)} がインシュランス（${fee}）。`);
+  if(isNatural(S.hands[opp][0])){
+    // 的中：ハンド無効。拠出も保険料も全て返す
+    // 的中：この勝負をなかったことにする。
+    // ポットには「両者の拠出」＋「先に外れた保険料」が入っているので、全て持ち主へ返す
+    S.chips[seat]+=fee; S.ins[seat]=0;
+    S.chips.p += S.contrib.p + (S.insLost.p||0);
+    S.chips.c += S.contrib.c + (S.insLost.c||0);
+    S.pot=0; S.contrib={p:0,c:0}; S.insLost={p:0,c:0}; S.revealAll=true;
+    logLine(`的中。${tok(opp)} はナチュラルでした。この勝負は無効です。`);
+    recordHand("インシュランス的中");
+    return endHand({[seat]:"インシュランス的中", [opp]:"相手のインシュランスが的中"},
+      "相手がナチュラルだったため、この勝負はなかったことになりました。拠出も保険料も全額戻ります。");
+  }
+  // 外れ：保険料を没収してポットへ。相手の伏せ札は開かない
+  S.pot+=fee; S.insLost[seat]=(S.insLost[seat]||0)+fee;
+  logLine(`外れ。${tok(opp)} はナチュラルではありませんでした（伏せ札は伏せたまま）。`);
+  show({actor:"any", headline:{[seat]:"インシュランスは外れ", [opp]:"相手のインシュランスは外れ"},
+    sub:`${tok(opp)} はナチュラルではありませんでした。保険料 ${fee} はポットに加算され、勝負は続きます。\n伏せ札は公開されません。`,
+    rows:[[{t:"次へ", solid:true, f:next}]]});
+}
+
 function startSurrender(seat){
   S.phase="surrender";
   const next = seat===nonDealer() ? ()=>startSurrender(S.dealer) : startDraw;
@@ -722,9 +824,10 @@ function startSurrender(seat){
     const upCard=S.hands.p[0].cards[1], up = upCard.r==="A" ? 11 : V1(upCard.r);
     if(t===16 && up>=10) {
       show({headline:"{C} が判断中…", sub:"サレンダーするか決めています。"});
-      return later(()=>doSurrender("c"), 600);   // show を先に。later は再生中に即実行されるため
+      return later(()=>doSurrender("c"), THINK);   // show を先に。later は再生中に即実行されるため
     }
-    return later(next,400);
+    show({headline:"{C} が判断中…", sub:"サレンダーするか決めています。"});
+    return later(next, THINK);
   }
   const back=Math.floor(S.contrib[seat]/2);
   show({actor:seat, headline:"サレンダー判断",
@@ -752,7 +855,7 @@ function doFold(seat){
 
 /* ---------- ドローフェーズ ---------- */
 function startDraw(){ S.phase="draw"; S.turn=nonDealer(); S.handIdx=0; runDraw(); }
-function runDraw(){ if(isCPU(S.turn)) later(cpuDraw,650); else drawUI(S.turn); }
+function runDraw(){ if(isCPU(S.turn)) later(cpuDraw,THINK); else drawUI(S.turn); }
 function nextHandIdx(seat){
   if(S.handIdx < S.hands[seat].length-1){ S.handIdx++; runDraw(); }
   else if(seat===nonDealer()){ S.turn=S.dealer; S.handIdx=0; runDraw(); }
@@ -828,7 +931,7 @@ function doDD(seat){
       logLine(`{C} は応じました（+${need}）。`);
       show({actor:"any", headline:"{C} が応じました", sub:`{C} が ${need} を追加投入しました。`,
         rows:[[{t:"次へ",solid:true,f:()=>nextHandIdx(seat)}]]});
-    }, 800);
+    }, THINK);
   }
   show({actor:opp, headline:{[seat]:"ダブルダウンしました",[opp]:"相手がダブルダウン"},
     sub:{[seat]:"相手の判断を待ちます。", [opp]:`応じるには ${need} の追加投入が必要です。応じてもDD扱いにはなりません。`},
@@ -855,7 +958,7 @@ function cpuDraw(){
     setAct("c",`ヒット → ${h.cards[h.cards.length-1].r}`);
     logLine(`{C} がヒット → ${h.cards[h.cards.length-1].r}`);
     show({headline:"{C} がヒット", sub:"引いたカードは公開されます。"});
-    return later(cpuDraw,650);
+    return later(cpuDraw,THINK);
   }
   h.stood=true; setAct("c","スタンド"); logLine("{C} はスタンド。"); nextHandIdx("c");
 }
@@ -985,7 +1088,7 @@ function staleView(){
   const head = typeof v.headline==="string" ? v.headline : Object.values(v.headline||{}).join(" ");
   // ハンドが終わっているのに、進行中の画面が残っている
   if(S.phase!=="result" && S.phase!=="over" && S.revealAll) return true;
-  if((S.phase==="result"||S.phase==="over") && /判断中|ドローフェーズ|ベットラウンド|サレンダー判断/.test(head)) return true;
+  if((S.phase==="result"||S.phase==="over") && /判断中|ドローフェーズ|ベットラウンド|サレンダー判断|インシュランス/.test(head)) return true;
   return false;
 }
 /* いまの局面から画面を作り直す */
