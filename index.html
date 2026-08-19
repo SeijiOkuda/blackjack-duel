@@ -87,6 +87,35 @@
 
   .divider{border:none;border-top:3px solid var(--line);margin:2px 0;}
 
+  /* ---- 演出 ---- */
+  @keyframes dealIn{ from{ transform:translateY(-16px) rotateY(90deg); opacity:0; }
+                     to{ transform:none; opacity:1; } }
+  .card.dealt{ animation:dealIn .34s cubic-bezier(.2,.8,.3,1) both; }
+  @keyframes popIn{ 0%{transform:scale(.6);opacity:0} 60%{transform:scale(1.08)} 100%{transform:scale(1);opacity:1} }
+  .callout{ display:inline-block; font-weight:800; letter-spacing:.04em;
+    padding:3px 12px; border-radius:99px; font-size:12px; white-space:nowrap;
+    animation:popIn .38s ease-out both; }
+  .callout.bj{ background:#f5b301; color:#111; }
+  .callout.bust{ background:#c8102e; color:#fff; }
+  @keyframes rainbow{ to{ background-position:200% center; } }
+  .callout.natural{ color:#fff;
+    background:linear-gradient(90deg,#e5484d,#f5b301,#3fa34d,#3b82f6,#8b5cf6,#e5484d);
+    background-size:200% auto; animation:popIn .38s ease-out both, rainbow 2.4s linear infinite; }
+
+  /* 勝敗の強調 */
+  @keyframes riseIn{ from{transform:translateY(10px);opacity:0} to{transform:none;opacity:1} }
+  .msg .headline.win, .msg .headline.lose, .msg .headline.push{
+    font-size:24px; letter-spacing:.02em; animation:riseIn .3s ease-out both;
+    display:inline-block; padding:6px 18px; border-radius:99px; }
+  .msg .headline.win{ background:#111; color:#fff; }
+  .msg .headline.lose{ border:2.5px solid var(--line); }
+  .msg .headline.push{ border:2.5px dashed var(--dim); color:var(--dim); }
+  .delta{ font-size:15px; font-weight:800; margin-top:2px; }
+  .delta.plus{ color:#137333; } .delta.minus{ color:#c8102e; }
+  @media (prefers-reduced-motion: reduce){
+    .card.dealt,.callout,.msg .headline.win,.msg .headline.lose,.msg .headline.push{animation:none!important;}
+  }
+
   /* ---- 説明とボタン ---- */
   .msg{flex:1 1 auto;display:flex;flex-direction:column;justify-content:center;
     text-align:center;padding:10px 4px;gap:5px;min-height:56px;}
@@ -189,7 +218,7 @@
     <div class="side" id="botLabel"></div>
     <div class="hands" id="botHands"></div>
   </section>
-  <div class="msg"><div class="headline" id="headline">&nbsp;</div><div class="sub" id="sub">&nbsp;</div></div>
+  <div class="msg"><div class="headline" id="headline">&nbsp;</div><div class="delta" id="delta"></div><div class="sub" id="sub">&nbsp;</div></div>
   <div class="actions" id="actions"></div>
 </div>
 
@@ -492,12 +521,17 @@ function seatData(who, viewer){
       if(isMe) return {r:c.r,s:c.s,dashed:c.hidden};
       return c.hidden ? {down:true} : {r:c.r,s:c.s};
     });
-    let t,cls="";
-    if(S.revealAll || isMe){ const v=handTotal(h); t = v>21 ? "バースト" : String(v); }
+    let t,cls="",call="";
+    if(S.revealAll || isMe){
+      const v=handTotal(h);
+      t = v>21 ? "バースト" : String(v);
+      if(v===21) call = isNatural(h) ? "natural" : "bj";
+      else if(v>21) call = "bust";
+    }
     else if(hasHidden(h)){ t = totalLabel(visCards(h))+"+?"; cls="unknown"; }
     else { const v=handTotal(h); t = v>21 ? "バースト" : String(v); }
     const dim = hs.length>1 && S.phase==="draw" && S.turn===who && S.handIdx!==idx;
-    return {cards, total:t, cls:cls+(hs.length>1?" small":""), dim};
+    return {cards, total:t, cls:cls+(hs.length>1?" small":""), dim, call, n:h.cards.length};
   });
 }
 function countsFor(viewer){
@@ -548,7 +582,8 @@ function buildPayload(viewer){
     topLabel:oppLabel(), botLabel:"あなた",
     topDealer:S.dealer===opp, botDealer:S.dealer===viewer,
     top:seatData(opp,viewer), bot:seatData(viewer,viewer),
-    myChips:S.chips[viewer], oppChips:S.chips[opp], pot:S.pot,
+    myChips:S.chips[viewer], oppChips:S.chips[opp], pot:S.pot, handNo:S.handNo,
+    outcome:(v.outcome && v.outcome[viewer])||null, delta:(v.delta&&v.delta[viewer])||0,
     topAct: S.lastAct ? (S.lastAct[opp]||"") : "",
     botAct: S.lastAct ? (S.lastAct[viewer]||"") : "",
     topThinking: isThinking(opp, v),
@@ -583,18 +618,30 @@ function applyAction(id, remote){
 function sendMsg(o){ try{ conn&&conn.open&&conn.send(o); }catch(e){} }
 
 /* ---------- 共通描画 ---------- */
-function cardHTML(c){
-  if(c.down) return `<div class="card down"></div>`;
+function cardHTML(c, isNew){
+  const nw = isNew ? " dealt" : "";
+  if(c.down) return `<div class="card down${nw}"></div>`;
   const red = (c.s==="\u2665"||c.s==="\u2666") ? " red" : "";
-  return `<div class="card${red}${c.dashed?" mine-hidden":""}">
+  return `<div class="card${red}${c.dashed?" mine-hidden":""}${nw}">
     <div class="pip"><span class="r">${c.r}</span><span class="s">${c.s}</span></div>
     <div class="pip rev"><span class="r">${c.r}</span><span class="s">${c.s}</span></div></div>`;
 }
-const handsHTML = hs => hs.map(h=>`<div class="handrow ${h.dim?"inactive":""}">
-  <div class="cards">${h.cards.map(cardHTML).join("")}</div>
-  <div class="total ${h.cls||""}">${h.total}</div></div>`).join("");
+const CALLTEXT={natural:"NATURAL BLACKJACK!", bj:"BLACKJACK!", bust:"BUST"};
+let PREVN={};   // 直前の描画時のカード枚数。増えた分だけ配り演出を付ける
+function handsHTML(hs, key){
+  return hs.map((h,idx)=>{
+    const k=key+idx, prev=PREVN[k]||0, now=h.cards.length;
+    PREVN[k]=now;
+    const cards=h.cards.map((c,i)=>cardHTML(c, i>=prev && now>prev)).join("");
+    const call=h.call ? `<div class="callout ${h.call}">${CALLTEXT[h.call]}</div>` : "";
+    return `<div class="handrow ${h.dim?"inactive":""}">
+      <div class="cards">${cards}</div>
+      <div><div class="total ${h.cls||""}">${h.total}</div>${call}</div></div>`;
+  }).join("");
+}
 
 function paint(pl,onBtn){
+  if(LASTPL && pl.handNo!==LASTPL.handNo) PREVN={};
   LASTPL=pl; showScreen("scGame");
   $("myChips").textContent=pl.myChips; $("oppChips").textContent=pl.oppChips;
   $("oppChipsLabel").textContent=" "+pl.topLabel; $("pot").textContent=pl.pot;
@@ -616,9 +663,17 @@ function paint(pl,onBtn){
     gs.classList[(pl.top.length>1 && pl.bot.length>1)?"add":"remove"]("split2");
   }
 
-  $("topHands").innerHTML=handsHTML(pl.top);
-  $("botHands").innerHTML=handsHTML(pl.bot);
-  $("headline").textContent=pl.headline||"\u00a0";
+  $("topHands").innerHTML=handsHTML(pl.top,"t");
+  $("botHands").innerHTML=handsHTML(pl.bot,"b");
+  const hl=$("headline");
+  hl.className = "headline" + (pl.outcome ? " "+pl.outcome : "");
+  hl.textContent=pl.headline||"\u00a0";
+  const dl=$("delta");
+  if(dl){
+    if(pl.delta){ dl.className="delta "+(pl.delta>0?"plus":"minus");
+      dl.textContent=(pl.delta>0?"+":"")+pl.delta; }
+    else { dl.className="delta"; dl.textContent=""; }
+  }
   $("sub").textContent=pl.sub||"\u00a0";
   const act=$("actions"); act.innerHTML="";
   (pl.rows||[]).forEach(row=>{
@@ -805,7 +860,8 @@ function doInsurance(seat, next){
     logLine(`的中。${tok(opp)} はナチュラルでした。この勝負は無効です。`);
     recordHand("インシュランス的中");
     return endHand({[seat]:"インシュランス的中", [opp]:"相手のインシュランスが的中"},
-      "相手がナチュラルだったため、この勝負はなかったことになりました。拠出も保険料も全額戻ります。");
+      "相手がナチュラルだったため、この勝負はなかったことになりました。拠出も保険料も全額戻ります。",
+      {p:"push", c:"push"}, {p:0, c:0});
   }
   // 外れ：保険料を没収してポットへ。相手の伏せ札は開かない
   S.pot+=fee; S.insLost[seat]=(S.insLost[seat]||0)+fee;
@@ -843,14 +899,20 @@ function doSurrender(seat){
   S.chips[w]+=S.pot;
   setAct(seat,"サレンダー");
   logLine(`${tok(seat)} がサレンダー（${back} 返却）。${tok(w)} が ${S.pot} を獲得。`);
-  S.pot=0; recordHand("サレンダー"); endHand({[seat]:"サレンダーしました", [w]:"相手がサレンダーしました"}, "拠出の半分が戻りました。");
+  S.pot=0; recordHand("サレンダー");
+  const b2=S.chipsAtDeal||{p:START,c:START};
+  endHand({[seat]:"サレンダー", [w]:"相手がサレンダー"}, "拠出の半分が戻りました。",
+    {[seat]:"lose", [w]:"win"}, {p:S.chips.p-b2.p, c:S.chips.c-b2.c});
 }
 function doFold(seat){
   const w=other(seat);
   S.chips[w]+=S.pot;
   setAct(seat,"フォールド");
   logLine(`${tok(seat)} がフォールド。${tok(w)} が ${S.pot} を獲得。`);
-  S.pot=0; recordHand("フォールド"); endHand({[seat]:"フォールドしました", [w]:"相手がフォールドしました"}, "");
+  S.pot=0; recordHand("フォールド");
+  const b1=S.chipsAtDeal||{p:START,c:START};
+  endHand({[seat]:"フォールド", [w]:"相手がフォールド"}, "",
+    {[seat]:"lose", [w]:"win"}, {p:S.chips.p-b1.p, c:S.chips.c-b1.c});
 }
 
 /* ---------- ドローフェーズ ---------- */
@@ -997,10 +1059,14 @@ function showdown(){
     logLine(`${n>1?`勝負${i+1}：`:""}{P} ${ta>21?"バースト":ta} ／ {C} ${tb>21?"バースト":tb} → ${tok(w)}が${sh[i]}獲得${why?`（${why}）`:""}`);
   }
   S.pot=0; recordHand(lastWhy);
+  const before=S.chipsAtDeal||{p:START,c:START};
+  const dp=S.chips.p-before.p, dc=S.chips.c-before.c;
   const head = s => { const w = s==="p"?winP:n-winP;
-    if(n===1) return w===1 ? "あなたの勝ち" : "相手の勝ち";
-    return w===n ? "あなたの2勝" : w===0 ? "相手の2勝" : "1勝1敗"; };
-  endHand({p:head("p"),c:head("c")}, "ログで内訳を確認できます。");
+    if(n===1) return w===1 ? "WIN" : "LOSE";
+    return w===n ? "2勝" : w===0 ? "2敗" : "1勝1敗"; };
+  const oc = d => d>0 ? "win" : d<0 ? "lose" : "push";
+  endHand({p:head("p"),c:head("c")}, "",
+    {p:oc(dp), c:oc(dc)}, {p:dp, c:dc});
 }
 function recordHand(note){
   const before = S.chipsAtDeal || {p:START,c:START};
@@ -1010,9 +1076,10 @@ function recordHand(note){
   });
   if(S.record.length>200) S.record.shift();
 }
-function endHand(headline, sub){
+function endHand(headline, sub, outcome, delta){
   S.phase="result"; S.revealAll=true;
-  show({actor:"any", headline, sub, rows:[[{t:"次のハンドへ", solid:true, f:nextHand}]]});
+  show({actor:"any", headline, sub, outcome, delta,
+    rows:[[{t:"次のハンドへ", solid:true, f:nextHand}]]});
 }
 function nextHand(){ S.dealer=other(S.dealer); newHand(); }
 function gameOver(){
