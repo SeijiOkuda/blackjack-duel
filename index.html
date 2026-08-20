@@ -64,7 +64,8 @@
   .hands{flex:1;display:flex;flex-direction:column;align-items:center;gap:7px;min-width:0;}
   .handrow{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;}
   .handrow.inactive{opacity:.4;}
-  .cards{display:flex;padding-left:var(--ov);}
+  .cards{display:flex;padding-left:var(--ov);min-width:0;}
+  .cardwrap{overflow:visible;}
   .total{font-size:22px;font-weight:600;min-width:56px;text-align:left;line-height:1.15;}
   .total.small{font-size:15px;}
   .total.unknown{color:var(--dim);font-size:15px;}
@@ -92,9 +93,18 @@
                      to{ transform:none; opacity:1; } }
   .card.dealt{ animation:dealIn .34s cubic-bezier(.2,.8,.3,1) both; }
   @keyframes popIn{ 0%{transform:scale(.6);opacity:0} 60%{transform:scale(1.08)} 100%{transform:scale(1);opacity:1} }
-  .callout{ display:inline-block; font-weight:800; letter-spacing:.04em;
-    padding:3px 12px; border-radius:99px; font-size:12px; white-space:nowrap;
-    animation:popIn .38s ease-out both; }
+  .cardwrap{position:relative;display:flex;justify-content:center;min-width:0;}
+  /* カードの下端に少しだけ重ねる。合計の数字には掛からない */
+  .callout{ position:absolute; left:50%; bottom:-7px; transform:translateX(-50%);
+    z-index:9; font-weight:800; letter-spacing:.03em; white-space:nowrap;
+    padding:3px 10px; border-radius:99px; font-size:10.5px;
+    box-shadow:0 2px 7px rgba(0,0,0,.22); animation:popIn .38s ease-out both; }
+  #scGame.c6 .callout{font-size:9.5px;padding:2px 8px;bottom:-6px;}
+  /* 帯が出ているときだけ、そのぶんの余白を確保する */
+  #scGame.hascall .handrow{padding-bottom:8px;}
+  #scGame.hascall.split .handrow{padding-bottom:3px;}
+  #scGame.hascall.split2 .handrow{padding-bottom:1px;}
+  #scGame.split2 .msg{min-height:30px;padding:3px 4px;}
   .callout.bj{ background:#f5b301; color:#111; }
   .callout.bust{ background:#c8102e; color:#fff; }
   @keyframes rainbow{ to{ background-position:200% center; } }
@@ -105,12 +115,13 @@
   /* 勝敗の強調 */
   @keyframes riseIn{ from{transform:translateY(10px);opacity:0} to{transform:none;opacity:1} }
   .msg .headline.win, .msg .headline.lose, .msg .headline.push{
-    font-size:24px; letter-spacing:.02em; animation:riseIn .3s ease-out both;
-    display:inline-block; padding:6px 18px; border-radius:99px; }
-  .msg .headline.win{ background:#111; color:#fff; }
-  .msg .headline.lose{ border:2.5px solid var(--line); }
-  .msg .headline.push{ border:2.5px dashed var(--dim); color:var(--dim); }
-  .delta{ font-size:15px; font-weight:800; margin-top:2px; }
+    animation:riseIn .3s ease-out both;
+    font-size:34px; font-weight:800; letter-spacing:.08em; line-height:1.1;
+    background:none; border:none; padding:0; border-radius:0; }
+  .msg .headline.win{ color:#111; }
+  .msg .headline.lose{ color:var(--dim); font-weight:700; letter-spacing:.06em; }
+  .msg .headline.push{ color:var(--dim); font-weight:600; font-size:26px; }
+  .delta{ font-size:17px; font-weight:800; margin-top:1px; letter-spacing:.02em; }
   .delta.plus{ color:#137333; } .delta.minus{ color:#c8102e; }
   @media (prefers-reduced-motion: reduce){
     .card.dealt,.callout,.msg .headline.win,.msg .headline.lose,.msg .headline.push{animation:none!important;}
@@ -145,6 +156,16 @@
   #scGame.split2 .card{border-width:2px;border-radius:8px;padding:3px 4px;}
   #scGame.split2 .card .pip .r{font-size:15px;} #scGame.split2 .card .pip .s{font-size:11px;}
   #scGame.split2 .side{flex:0 0 84px;width:84px;gap:4px;}
+  /* 枚数が増えたときの詰め方。行ごとに独立して効く。
+     4〜5枚まではカードを原寸のまま、重なりを深くするだけで収める */
+  .handrow.c4{ --ov:41px; }
+  .handrow.c6{ --cw:60px; --ch:84px; --ov:40px; }
+  .handrow.c8{ --cw:50px; --ch:70px; --ov:36px; }
+  .handrow.c6 .total{font-size:19px;min-width:50px;}
+  .handrow.c8 .total{font-size:17px;min-width:46px;}
+  .handrow.c6 .card .pip .r{font-size:17px;} .handrow.c6 .card .pip .s{font-size:13px;}
+  .handrow.c8 .card .pip .r{font-size:14px;} .handrow.c8 .card .pip .s{font-size:11px;}
+  .handrow.c8 .card{border-width:2px;border-radius:8px;padding:3px 4px;}
 
   /* ---- シート（ルール / 残りカード / 成績）---- */
   .sheet{position:fixed;inset:0;background:#fff;z-index:20;overflow-y:auto;display:none;
@@ -163,13 +184,22 @@
   .cell{border:2px solid var(--line);border-radius:9px;padding:7px 4px;text-align:center;}
   .cell .rk{font-size:17px;font-weight:700;} .cell .ct{font-size:12px;color:var(--dim);margin-top:2px;}
   .cell.low{border-color:#c9c9c9;} .cell.low .rk{color:#c9c9c9;}
-  .hrow{display:flex;align-items:baseline;gap:9px;padding:9px 2px;border-bottom:1px solid #eee;font-size:14px;}
-  .hrow .hn{color:var(--dim);font-size:12px;min-width:34px;}
+  /* 列をグリッドで固定して、席のラベル幅の違いでズレないようにする */
+  .hhead, .hrow{
+    display:grid; grid-template-columns:38px 84px 1fr 1fr;
+    align-items:center; gap:8px; padding:9px 2px; font-size:14px;
+    border-bottom:1px solid #eee;}
+  .hhead{font-size:11px;color:var(--dim);border-bottom:2px solid var(--line);
+    padding-bottom:6px;letter-spacing:.04em;}
+  .hhead .r, .hrow .hv{text-align:right;}
+  .hrow .hn{color:var(--dim);font-size:12px;}
   .hrow .hd{font-size:10px;border:1px solid #ddd;border-radius:99px;
-    padding:1px 7px;color:var(--dim);white-space:nowrap;}
-  .hrow .hv{font-weight:700;min-width:52px;text-align:right;}
+    padding:2px 0;color:var(--dim);white-space:nowrap;text-align:center;}
+  .hrow .hv{font-weight:700;font-variant-numeric:tabular-nums;}
   .hrow .hv.win{color:#137333;} .hrow .hv.lose{color:#c8102e;}
-  .hrow .hnote{font-size:12px;color:var(--dim);}
+  .hrow .hnote{font-size:11px;color:var(--dim);text-align:right;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  @media (max-width:359px){ .hhead,.hrow{grid-template-columns:32px 74px 1fr 1fr;gap:6px;} }
   @media (prefers-reduced-motion: reduce){*{transition:none!important;}}
 </style>
 </head>
@@ -634,9 +664,10 @@ function handsHTML(hs, key){
     PREVN[k]=now;
     const cards=h.cards.map((c,i)=>cardHTML(c, i>=prev && now>prev)).join("");
     const call=h.call ? `<div class="callout ${h.call}">${CALLTEXT[h.call]}</div>` : "";
-    return `<div class="handrow ${h.dim?"inactive":""}">
-      <div class="cards">${cards}</div>
-      <div><div class="total ${h.cls||""}">${h.total}</div>${call}</div></div>`;
+    const sz = now>=8 ? " c8" : now>=6 ? " c6" : now>=4 ? " c4" : "";
+    return `<div class="handrow${sz} ${h.dim?"inactive":""}">
+      <div class="cardwrap"><div class="cards">${cards}</div>${call}</div>
+      <div class="total ${h.cls||""}">${h.total}</div></div>`;
   }).join("");
 }
 
@@ -661,6 +692,9 @@ function paint(pl,onBtn){
   if(gs){
     gs.classList[(pl.top.length>1 || pl.bot.length>1)?"add":"remove"]("split");
     gs.classList[(pl.top.length>1 && pl.bot.length>1)?"add":"remove"]("split2");
+    // 手札の最大枚数に応じてカードを縮める
+    const anyCall = [...pl.top, ...pl.bot].some(x=>x.call);
+    gs.classList[anyCall?"add":"remove"]("hascall");
   }
 
   $("topHands").innerHTML=handsHTML(pl.top,"t");
@@ -693,11 +727,12 @@ $("scoreBtn").onclick=()=>{
   const sc=LASTPL.score||{w:0,l:0,net:0,rows:[]};
   $("scoreHead").textContent = `${sc.w}勝 ${sc.l}敗 ／ 収支 ${sc.net>=0?"+":""}${sc.net}`;
   $("scoreRows").innerHTML = sc.rows.length
-    ? sc.rows.map(r=>`<div class="hrow">
+    ? `<div class="hhead"><span>ハンド</span><span>席</span><span class="r">収支</span><span class="r">決まり方</span></div>`
+      + sc.rows.map(r=>`<div class="hrow">
         <span class="hn">#${r.n}</span>
         <span class="hd">${r.dealer?"ディーラー":"ノンディーラー"}</span>
         <span class="hv ${r.d>0?"win":r.d<0?"lose":""}">${r.d>0?"+":""}${r.d}</span>
-        <span class="hnote">${r.note||""}</span></div>`).join("")
+        <span class="hnote">${r.note||"—"}</span></div>`).join("")
     : `<p class="note" style="text-align:left">まだ記録がありません。</p>`;
   $("scoreSheet").classList.add("open");
 };
@@ -1063,7 +1098,7 @@ function showdown(){
   const dp=S.chips.p-before.p, dc=S.chips.c-before.c;
   const head = s => { const w = s==="p"?winP:n-winP;
     if(n===1) return w===1 ? "WIN" : "LOSE";
-    return w===n ? "2勝" : w===0 ? "2敗" : "1勝1敗"; };
+    return w===n ? "WIN  2－0" : w===0 ? "LOSE  0－2" : "1勝1敗"; };
   const oc = d => d>0 ? "win" : d<0 ? "lose" : "push";
   endHand({p:head("p"),c:head("c")}, "",
     {p:oc(dp), c:oc(dc)}, {p:dp, c:dc});
